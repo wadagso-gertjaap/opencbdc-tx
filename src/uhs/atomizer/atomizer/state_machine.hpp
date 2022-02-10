@@ -8,6 +8,7 @@
 
 #include "atomizer.hpp"
 #include "messages.hpp"
+#include "util/event_sampler/event_sampler.hpp"
 
 #include <libnuraft/nuraft.hxx>
 #include <shared_mutex>
@@ -146,6 +147,8 @@ namespace cbdc::atomizer {
         size_t m_stxo_cache_depth{};
 
         std::shared_mutex m_snp_mut;
+
+        event_sampler m_event_sampler;
     };
 }
 #endif // OPENCBDC_TX_SRC_ATOMIZER_STATE_MACHINE_H_

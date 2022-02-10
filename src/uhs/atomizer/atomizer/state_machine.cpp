@@ -8,6 +8,7 @@
 #include "atomizer.hpp"
 #include "atomizer_raft.hpp"
 #include "format.hpp"
+#include "util/event_sampler/event_sampler.hpp"
 #include "util/raft/serialization.hpp"
 #include "util/raft/util.hpp"
 #include "util/serialization/format.hpp"
@@ -23,7 +24,8 @@ namespace cbdc::atomizer {
     state_machine::state_machine(size_t stxo_cache_depth,
                                  std::string snapshot_dir)
         : m_snapshot_dir(std::move(snapshot_dir)),
-          m_stxo_cache_depth(stxo_cache_depth) {
+          m_stxo_cache_depth(stxo_cache_depth),
+          m_event_sampler("state_machine") {
         m_atomizer = std::make_shared<atomizer>(0, m_stxo_cache_depth);
         m_blocks = std::make_shared<decltype(m_blocks)::element_type>();
         auto err = std::error_code();
@@ -41,15 +43,16 @@ namespace cbdc::atomizer {
 
     auto state_machine::commit(nuraft::ulong log_idx, nuraft::buffer& data)
         -> nuraft::ptr<nuraft::buffer> {
+        const auto start = std::chrono::high_resolution_clock::now();
         m_last_committed_idx = log_idx;
         auto req = from_buffer<request>(data);
         assert(req.has_value());
-
         auto resp = std::visit(
             overloaded{
                 [&](aggregate_tx_notify_request& r)
                     -> std::optional<response> {
                     auto errs = errors();
+                    auto sz = r.m_agg_txs.size();
                     for(auto&& msg : r.m_agg_txs) {
                         auto err = m_atomizer->insert_complete(
                             msg.m_oldest_attestation,
@@ -60,11 +63,14 @@ namespace cbdc::atomizer {
                         }
                         m_tx_notify_count++;
                     }
+                    m_event_sampler.append(
+                        sampled_event_type::state_machine_tx_notify,
+                        start,
+                        sz);
 
                     if(!errs.empty()) {
                         return errs;
                     }
-
                     return std::nullopt;
                 },
                 [&](const make_block_request& /* r */)

@@ -13,6 +13,7 @@
 namespace cbdc::atomizer {
     auto atomizer::make_block()
         -> std::pair<block, std::vector<cbdc::watchtower::tx_error>> {
+        const auto start = std::chrono::high_resolution_clock::now();
         block blk;
 
         blk.m_transactions.swap(m_complete_txs);
@@ -38,6 +39,7 @@ namespace cbdc::atomizer {
 
         blk.m_height = m_best_height;
 
+        m_event_sampler.append(sampled_event_type::make_block, start, blk.m_transactions.size());
         return {blk, errs};
     }
 
@@ -134,24 +136,27 @@ namespace cbdc::atomizer {
     auto atomizer::insert_complete(uint64_t oldest_attestation,
                                    transaction::compact_tx&& tx)
         -> std::optional<cbdc::watchtower::tx_error> {
+        const auto start = std::chrono::high_resolution_clock::now();
         const auto height_offset = get_notification_offset(oldest_attestation);
 
         auto offset_err = check_notification_offset(height_offset, tx);
         if(offset_err) {
-            return offset_err;
+	        m_event_sampler.append(sampled_event_type::discarded_expired, start);
+	        return offset_err;
         }
 
         auto cache_check_range = height_offset;
 
         auto err_set = check_stxo_cache(tx, cache_check_range);
         if(err_set) {
+            m_event_sampler.append(sampled_event_type::discarded_spent, start);
             return err_set;
         }
 
         add_tx_to_stxo_cache(tx);
 
         m_complete_txs.push_back(std::move(tx));
-
+        m_event_sampler.append(sampled_event_type::insert_complete, start);
         return std::nullopt;
     }
 
@@ -166,7 +171,8 @@ namespace cbdc::atomizer {
     atomizer::atomizer(const uint64_t best_height,
                        const size_t stxo_cache_depth)
         : m_best_height(best_height),
-          m_spent_cache_depth(stxo_cache_depth) {
+          m_spent_cache_depth(stxo_cache_depth),
+          m_event_sampler("atomizer") {
         m_txs.resize(stxo_cache_depth + 1);
         m_spent.resize(stxo_cache_depth + 1);
     }

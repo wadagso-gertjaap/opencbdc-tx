@@ -10,6 +10,7 @@
 #include "uhs/atomizer/watchtower/tx_error_messages.hpp"
 #include "uhs/transaction/transaction.hpp"
 #include "util/common/hashmap.hpp"
+#include "util/event_sampler/event_sampler.hpp"
 
 #include <map>
 #include <mutex>
@@ -143,6 +144,8 @@ namespace cbdc::atomizer {
             -> std::optional<watchtower::tx_error>;
 
         void add_tx_to_stxo_cache(const transaction::compact_tx& tx);
+
+        cbdc::event_sampler m_event_sampler;
     };
 }
 

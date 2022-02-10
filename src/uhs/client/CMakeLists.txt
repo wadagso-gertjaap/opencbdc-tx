@@ -18,6 +18,7 @@ target_link_libraries(client-cli client
                                  rpc
                                  network
                                  common
+                                 event_sampler
                                  serialization
                                  crypto
                                  secp256k1

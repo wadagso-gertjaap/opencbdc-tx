@@ -10,6 +10,7 @@
 #include "uhs/atomizer/atomizer/block.hpp"
 #include "util/common/config.hpp"
 #include "util/network/connection_manager.hpp"
+#include "util/event_sampler/event_sampler.hpp"
 
 #include <memory>
 
@@ -41,6 +42,7 @@ namespace cbdc::atomizer {
         uint32_t m_atomizer_id;
         cbdc::config::options m_opts;
         std::shared_ptr<logging::log> m_logger;
+        event_sampler m_event_sampler;
 
         atomizer_raft m_raft_node;
         std::mutex m_pending_txnotify_mut;

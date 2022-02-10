@@ -18,6 +18,7 @@ target_link_libraries(atomizer-raftd atomizer_raft
                                      transaction
                                      network
                                      common
+                                     event_sampler
                                      serialization
                                      crypto
                                      ${NURAFT_LIBRARY}

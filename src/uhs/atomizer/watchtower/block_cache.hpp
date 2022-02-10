@@ -59,7 +59,7 @@ namespace cbdc::watchtower {
         auto best_block_height() const -> uint64_t;
 
       private:
-        size_t m_k_blks;
+        //size_t m_k_blks;
         std::queue<cbdc::atomizer::block> m_blks;
         uint64_t m_best_blk_height{0};
         std::unordered_map<hash_t,

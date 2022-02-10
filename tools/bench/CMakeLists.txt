@@ -20,6 +20,7 @@ target_link_libraries(twophase-gen sentinel
 add_executable(atomizer-cli-watchtower atomizer-cli-watchtower.cpp)
 target_link_libraries(atomizer-cli-watchtower watchtower
                                               atomizer
+                                              event_sampler
                                               sentinel
                                               sentinel_interface
                                               rpc

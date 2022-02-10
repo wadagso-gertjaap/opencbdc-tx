@@ -11,6 +11,7 @@ target_link_libraries(shardd shard
                              transaction
                              network
                              common
+                             event_sampler
                              serialization
                              crypto
                              ${LEVELDB_LIBRARY}

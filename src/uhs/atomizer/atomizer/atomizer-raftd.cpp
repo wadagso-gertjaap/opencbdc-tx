@@ -6,7 +6,7 @@
 #include "controller.hpp"
 #include "util/common/config.hpp"
 #include "util/raft/console_logger.hpp"
-
+#include "util/event_sampler/event_sampler.hpp"
 #include <csignal>
 
 // LCOV_EXCL_START

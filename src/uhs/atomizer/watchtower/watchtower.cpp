@@ -58,15 +58,15 @@ namespace cbdc::watchtower {
     }
 
     auto watchtower::check_uhs_id_statuses(const std::vector<hash_t>& uhs_ids,
-                                           const hash_t& tx_id,
-                                           bool internal_err,
-                                           bool tx_err,
+                                           const hash_t& /*tx_id*/,
+                                           bool /*internal_err*/,
+                                           bool /*tx_err*/,
                                            uint64_t best_height)
         -> std::vector<status_update_state> {
         std::vector<status_update_state> states;
         states.reserve(uhs_ids.size());
         for(const auto& uhs_id : uhs_ids) {
-            auto found_status = false;
+            /*auto found_status = false;
             if(internal_err) {
                 states.emplace_back(
                     status_update_state{search_status::internal_error,
@@ -98,12 +98,10 @@ namespace cbdc::watchtower {
                 }
             } else if(auto unspent = m_bc.check_unspent(uhs_id)) {
                 auto [height, us_tx_id] = unspent.value();
-                if(us_tx_id == tx_id) {
-                    states.emplace_back(
-                        status_update_state{search_status::unspent,
-                                            height,
-                                            uhs_id});
-                    found_status = true;
+                if(us_tx_id == tx_id) {*/
+            states.emplace_back(
+                status_update_state{search_status::unspent, best_height, uhs_id});
+            /*      found_status = true;
                 }
             }
             if(!found_status) {
@@ -111,7 +109,7 @@ namespace cbdc::watchtower {
                     status_update_state{search_status::no_history,
                                         best_height,
                                         uhs_id});
-            }
+            }*/
         }
         return states;
     }
@@ -129,7 +127,7 @@ namespace cbdc::watchtower {
             std::lock(lk0, lk1);
             auto best_height = m_bc.best_block_height();
             for(const auto& [tx_id, uhs_ids] : req.uhs_ids()) {
-                auto tx_err = m_ec.check_tx_id(tx_id);
+                /*auto tx_err = m_ec.check_tx_id(tx_id);
                 bool internal_err{false};
                 if(tx_err.has_value()
                    && (std::holds_alternative<tx_error_sync>(
@@ -137,11 +135,11 @@ namespace cbdc::watchtower {
                        || std::holds_alternative<tx_error_stxo_range>(
                            tx_err.value().info()))) {
                     internal_err = true;
-                }
+                }*/
                 auto states = check_uhs_id_statuses(uhs_ids,
                                                     tx_id,
-                                                    internal_err,
-                                                    tx_err.has_value(),
+                                                    false, //internal_err,
+                                                    false, //tx_err.has_value(),
                                                     best_height);
                 chks.emplace(std::make_pair(tx_id, std::move(states)));
             }

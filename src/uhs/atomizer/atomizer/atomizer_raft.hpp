@@ -11,6 +11,7 @@
 #include "util/network/connection_manager.hpp"
 #include "util/raft/node.hpp"
 #include "util/raft/state_manager.hpp"
+#include "util/event_sampler/event_sampler.hpp"
 
 namespace cbdc::atomizer {
     /// \brief Manager for an atomizer raft node.
@@ -94,6 +95,8 @@ namespace cbdc::atomizer {
             m_txs;
         std::mutex m_complete_mut;
         std::vector<aggregate_tx_notification> m_complete_txs;
+        cbdc::event_sampler m_send_complete_txs_event_sampler;
+        cbdc::event_sampler m_tx_notify_event_sampler;
     };
 }
 

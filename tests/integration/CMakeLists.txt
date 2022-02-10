@@ -19,6 +19,7 @@ target_link_libraries(run_integration_tests ${GTEST_BOTH_LIBRARIES}
                                             client
                                             atomizer_raft
                                             atomizer
+                                            event_sampler
                                             shard
                                             archiver
                                             sentinel

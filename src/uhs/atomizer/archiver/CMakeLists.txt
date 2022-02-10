@@ -10,6 +10,7 @@ target_link_libraries(archiverd archiver
                                 transaction
                                 network
                                 common
+                                event_sampler
                                 serialization
                                 crypto
                                 ${LEVELDB_LIBRARY}

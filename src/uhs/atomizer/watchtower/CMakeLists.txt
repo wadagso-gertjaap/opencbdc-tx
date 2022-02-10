@@ -17,6 +17,7 @@ target_link_libraries(watchtowerd watchtower
                                   transaction
                                   network
                                   common
+                                  event_sampler
                                   serialization
                                   crypto
                                   ${NURAFT_LIBRARY}

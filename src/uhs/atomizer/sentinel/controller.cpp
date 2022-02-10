@@ -82,7 +82,6 @@ namespace cbdc::sentinel {
         if(!res.has_value()) {
             send_transaction(tx);
         }
-
         return response{status, res};
     }
 

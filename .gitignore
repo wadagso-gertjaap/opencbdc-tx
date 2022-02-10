@@ -63,3 +63,5 @@ cmake-build-*/
 build/gcov_data
 build/tests
 
+# Test outputs for local benchmarks
+test-output

@@ -33,6 +33,7 @@ target_link_libraries(run_unit_tests ${GTEST_BOTH_LIBRARIES}
                                      ${GMOCK_BOTH_LIBRARIES}
                                      util
                                      client
+                                     event_sampler
                                      atomizer
                                      atomizer_raft
                                      archiver

@@ -1,0 +1,248 @@
+version: '3'
+
+services:
+  watchtower0:
+    build: .
+    image: opencbdc-tx
+    container_name: opencbdc-watchtower0
+    tty: true
+    expose:
+      - "8555"
+    command: ./build/src/uhs/atomizer/watchtower/watchtowerd atomizer-compose-test.cfg 0
+    volumes:
+      - ./atomizer-compose-test.cfg:/opt/tx-processor/atomizer-compose-test.cfg:ro
+    networks:
+      atomizer-network:
+        ipv4_address: 172.16.1.10
+    healthcheck:
+      test: ["CMD-SHELL", "netstat -ltn | grep -c 8555"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: always
+
+  watchtower1:
+    build: .
+    image: opencbdc-tx
+    container_name: opencbdc-watchtower1
+    tty: true
+    expose:
+      - "8555"
+    command: ./build/src/uhs/atomizer/watchtower/watchtowerd atomizer-compose-test.cfg 1
+    volumes:
+      - ./atomizer-compose-test.cfg:/opt/tx-processor/atomizer-compose-test.cfg:ro
+    networks:
+      atomizer-network:
+        ipv4_address: 172.16.1.11
+    healthcheck:
+      test: ["CMD-SHELL", "netstat -ltn | grep -c 8555"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: always
+
+  atomizer0:
+    build: .
+    image: opencbdc-tx
+    container_name: opencbdc-atomizer0
+    tty: true
+    expose:
+      - "5555"
+      - "6666"
+    command: ./build/src/uhs/atomizer/atomizer/atomizer-raftd atomizer-compose-test.cfg 0
+    volumes:
+      - ./atomizer-compose-test.cfg:/opt/tx-processor/atomizer-compose-test.cfg:ro
+    depends_on:
+      - "watchtower0"
+      - "watchtower1"
+    networks:
+      atomizer-network:
+        ipv4_address: 172.16.1.20
+    healthcheck:
+      test: ["CMD-SHELL", "netstat -ltn | grep -c 5555"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: always
+
+  archiver0:
+    build: .
+    image: opencbdc-tx
+    container_name: opencbdc-archiver0
+    tty: true
+    expose:
+      - "4555"
+    command: ./scripts/wait-for-it.sh -s atomizer0:5555 -t 60 -- ./build/src/uhs/atomizer/archiver/archiverd atomizer-compose-test.cfg 0
+    volumes:
+      - ./atomizer-compose-test.cfg:/opt/tx-processor/atomizer-compose-test.cfg:ro
+    depends_on:
+      - "watchtower0"
+      - "watchtower1"
+      - "atomizer0"
+    networks:
+      atomizer-network:
+        ipv4_address: 172.16.1.30
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "netstat -ltn | grep -c 4555"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  loadgen0:
+    build: .
+    image: opencbdc-tx
+    container_name: opencbdc-loadgen0
+    tty: true
+    command: ./scripts/wait-for-it.sh -s atomizer0:5555 -t 60 -- ./build/tools/bench/atomizer-cli-watchtower atomizer-compose-test.cfg 0 0
+    volumes:
+      - ./atomizer-compose-test.cfg:/opt/tx-processor/atomizer-compose-test.cfg:ro
+    restart: always
+    depends_on:
+      - "atomizer0"
+    networks:
+      atomizer-network:
+        ipv4_address: 172.16.1.60
+
+  loadgen1:
+    build: .
+    image: opencbdc-tx
+    container_name: opencbdc-loadgen1
+    tty: true
+    command: ./scripts/wait-for-it.sh -s atomizer0:5555 -t 60 -- ./build/tools/bench/atomizer-cli-watchtower atomizer-compose-test.cfg 1 0
+    volumes:
+      - ./atomizer-compose-test.cfg:/opt/tx-processor/atomizer-compose-test.cfg:ro
+    restart: always
+    depends_on:
+      - "atomizer0"
+    networks:
+      atomizer-network:
+        ipv4_address: 172.16.1.61
+
+  loadgen2:
+    build: .
+    image: opencbdc-tx
+    container_name: opencbdc-loadgen2
+    tty: true
+    command: ./scripts/wait-for-it.sh -s atomizer0:5555 -t 60 -- ./build/tools/bench/atomizer-cli-watchtower atomizer-compose-test.cfg 2 0
+    volumes:
+      - ./atomizer-compose-test.cfg:/opt/tx-processor/atomizer-compose-test.cfg:ro
+    restart: always
+    depends_on:
+      - "atomizer0"
+    networks:
+      atomizer-network:
+        ipv4_address: 172.16.1.62
+
+  loadgen3:
+    build: .
+    image: opencbdc-tx
+    container_name: opencbdc-loadgen3
+    tty: true
+    command: ./scripts/wait-for-it.sh -s atomizer0:5555 -t 60 -- ./build/tools/bench/atomizer-cli-watchtower atomizer-compose-test.cfg 3 0
+    volumes:
+      - ./atomizer-compose-test.cfg:/opt/tx-processor/atomizer-compose-test.cfg:ro
+    restart: always
+    depends_on:
+      - "atomizer0"
+    networks:
+      atomizer-network:
+        ipv4_address: 172.16.1.63
+
+  loadgen4:
+    build: .
+    image: opencbdc-tx
+    container_name: opencbdc-loadgen4
+    tty: true
+    command: ./scripts/wait-for-it.sh -s atomizer0:5555 -t 60 -- ./build/tools/bench/atomizer-cli-watchtower atomizer-compose-test.cfg 4 0
+    volumes:
+      - ./atomizer-compose-test.cfg:/opt/tx-processor/atomizer-compose-test.cfg:ro
+    restart: always
+    depends_on:
+      - "atomizer0"
+    networks:
+      atomizer-network:
+        ipv4_address: 172.16.1.64
+
+  loadgen5:
+    build: .
+    image: opencbdc-tx
+    container_name: opencbdc-loadgen5
+    tty: true
+    command: ./scripts/wait-for-it.sh -s atomizer0:5555 -t 60 -- ./build/tools/bench/atomizer-cli-watchtower atomizer-compose-test.cfg 5 0
+    volumes:
+      - ./atomizer-compose-test.cfg:/opt/tx-processor/atomizer-compose-test.cfg:ro
+    restart: always
+    depends_on:
+      - "atomizer0"
+    networks:
+      atomizer-network:
+        ipv4_address: 172.16.1.65
+
+  loadgen6:
+    build: .
+    image: opencbdc-tx
+    container_name: opencbdc-loadgen6
+    tty: true
+    command: ./scripts/wait-for-it.sh -s atomizer0:5555 -t 60 -- ./build/tools/bench/atomizer-cli-watchtower atomizer-compose-test.cfg 6 0
+    volumes:
+      - ./atomizer-compose-test.cfg:/opt/tx-processor/atomizer-compose-test.cfg:ro
+    restart: always
+    depends_on:
+      - "atomizer0"
+    networks:
+      atomizer-network:
+        ipv4_address: 172.16.1.66
+
+  loadgen7:
+    build: .
+    image: opencbdc-tx
+    container_name: opencbdc-loadgen7
+    tty: true
+    command: ./scripts/wait-for-it.sh -s atomizer0:5555 -t 60 -- ./build/tools/bench/atomizer-cli-watchtower atomizer-compose-test.cfg 7 0
+    volumes:
+      - ./atomizer-compose-test.cfg:/opt/tx-processor/atomizer-compose-test.cfg:ro
+    restart: always
+    depends_on:
+      - "atomizer0"
+    networks:
+      atomizer-network:
+        ipv4_address: 172.16.1.67
+
+  loadgen8:
+    build: .
+    image: opencbdc-tx
+    container_name: opencbdc-loadgen8
+    tty: true
+    command: ./scripts/wait-for-it.sh -s atomizer0:5555 -t 60 -- ./build/tools/bench/atomizer-cli-watchtower atomizer-compose-test.cfg 8 0
+    volumes:
+      - ./atomizer-compose-test.cfg:/opt/tx-processor/atomizer-compose-test.cfg:ro
+    restart: always
+    depends_on:
+      - "atomizer0"
+    networks:
+      atomizer-network:
+        ipv4_address: 172.16.1.68
+
+  loadgen9:
+    build: .
+    image: opencbdc-tx
+    container_name: opencbdc-loadgen9
+    tty: true
+    command: ./scripts/wait-for-it.sh -s atomizer0:5555 -t 60 -- ./build/tools/bench/atomizer-cli-watchtower atomizer-compose-test.cfg 9 0
+    volumes:
+      - ./atomizer-compose-test.cfg:/opt/tx-processor/atomizer-compose-test.cfg:ro
+    restart: always
+    depends_on:
+      - "atomizer0"
+    networks:
+      atomizer-network:
+        ipv4_address: 172.16.1.69
+
+networks:
+  atomizer-network:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 172.16.1.0/16
+         gateway: 172.16.1.1

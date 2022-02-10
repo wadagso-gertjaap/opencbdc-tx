@@ -4,3 +4,6 @@ benchmarks
 plots
 .vscode
 .deps
+
+# Test outputs for local benchmarks
+test-output

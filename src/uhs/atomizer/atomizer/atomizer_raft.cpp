@@ -27,7 +27,9 @@ namespace cbdc::atomizer {
                0,
                std::move(logger),
                std::move(raft_callback),
-               wait_for_followers) {}
+               wait_for_followers),
+          m_send_complete_txs_event_sampler("send_complete_txs"),
+          m_tx_notify_event_sampler("tx_notify") {}
 
     auto atomizer_raft::get_sm() -> state_machine* {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
@@ -50,6 +52,7 @@ namespace cbdc::atomizer {
     }
 
     void atomizer_raft::tx_notify(tx_notify_request&& notif) {
+        const auto start = std::chrono::high_resolution_clock::now();
         auto it = m_txs.find(notif.m_tx);
         if(it != m_txs.end()) {
             for(auto n : notif.m_attestations) {
@@ -91,10 +94,12 @@ namespace cbdc::atomizer {
                 m_complete_txs.push_back(std::move(agg));
             }
         }
+        m_tx_notify_event_sampler.append(sampled_event_type::tx_notify, start);
     }
 
     auto atomizer_raft::send_complete_txs(const raft::callback_type& result_fn)
         -> bool {
+        const auto start = std::chrono::high_resolution_clock::now();
         auto atns = aggregate_tx_notify_request();
         {
             std::lock_guard<std::mutex> l(m_complete_mut);
@@ -103,7 +108,10 @@ namespace cbdc::atomizer {
         if(atns.m_agg_txs.empty()) {
             return false;
         }
-        return make_request(atns, result_fn);
+        auto sz = atns.m_agg_txs.size();
+        auto res = make_request(atns, result_fn);
+        m_send_complete_txs_event_sampler.append(sampled_event_type::send_complete_txs, start, sz);
+        return res;
     }
 
     auto atomizer_raft::attestation_hash::operator()(

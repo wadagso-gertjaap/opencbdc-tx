@@ -6,7 +6,7 @@
 #include "block_cache.hpp"
 
 namespace cbdc::watchtower {
-    block_cache::block_cache(size_t k) : m_k_blks(k) {
+    block_cache::block_cache(size_t k) {
         static constexpr auto puts_per_tx = 2;
         static constexpr auto txs_per_block = 1000000;
         m_spent_ids.reserve(k * txs_per_block * puts_per_tx);
@@ -14,6 +14,7 @@ namespace cbdc::watchtower {
     }
 
     void block_cache::push_block(cbdc::atomizer::block&& blk) {
+        /*
         if((m_k_blks != 0) && (m_blks.size() == m_k_blks)) {
             auto& old_blk = m_blks.front();
             for(auto& tx : old_blk.m_transactions) {
@@ -42,6 +43,8 @@ namespace cbdc::watchtower {
             }
         }
         m_best_blk_height = std::max(m_best_blk_height, blk_height);
+        */
+        m_best_blk_height = std::max(m_best_blk_height, blk.m_height);
     }
 
     auto block_cache::check_unspent(const hash_t& uhs_id) const

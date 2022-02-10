@@ -20,6 +20,7 @@ namespace cbdc::atomizer {
         : m_atomizer_id(atomizer_id),
           m_opts(opts),
           m_logger(std::move(log)),
+          m_event_sampler("atomizer_controller"),
           m_raft_node(
               static_cast<uint32_t>(atomizer_id),
               opts.m_atomizer_raft_endpoints[atomizer_id].value(),
@@ -98,6 +99,7 @@ namespace cbdc::atomizer {
 
     auto controller::server_handler(cbdc::network::message_t&& pkt)
         -> std::optional<cbdc::buffer> {
+        auto start = std::chrono::high_resolution_clock::now();
         if(!m_raft_node.is_leader()) {
             return std::nullopt;
         }
@@ -112,6 +114,9 @@ namespace cbdc::atomizer {
             overloaded{
                 [&](tx_notify_request& notif) {
                     m_raft_node.tx_notify(std::move(notif));
+                    m_event_sampler.append(
+                        sampled_event_type::server_handler_tx_notify,
+                        start);
                 },
                 [&](const prune_request& p) {
                     m_raft_node.make_request(p, nullptr);
@@ -192,7 +197,6 @@ namespace cbdc::atomizer {
         if(err) {
             return;
         }
-
         const auto res = r.get();
         assert(res);
         auto maybe_resp = from_buffer<state_machine::response>(*res);
