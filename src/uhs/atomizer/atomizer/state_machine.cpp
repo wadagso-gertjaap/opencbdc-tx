@@ -68,16 +68,19 @@ namespace cbdc::atomizer {
                         start,
                         sz);
 
-                    if(!errs.empty()) {
+                    /*if(!errs.empty()) {
                         return errs;
-                    }
+                    }*/
                     return std::nullopt;
                 },
                 [&](const make_block_request& /* r */)
                     -> std::optional<response> {
                     auto [blk, errs] = m_atomizer->make_block();
                     m_blocks->emplace(blk.m_height, blk);
-                    return make_block_response{blk, errs};
+                    auto empty_blk = block();
+                    empty_blk.m_height = blk.m_height;
+                    errs.clear();
+                    return make_block_response{empty_blk, errs};
                 },
                 [&](const get_block_request& r) -> std::optional<response> {
                     auto it = m_blocks->find(r.m_block_height);
