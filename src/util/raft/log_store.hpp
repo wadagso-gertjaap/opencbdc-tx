@@ -3,20 +3,21 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef OPENCBDC_TX_SRC_RAFT_LOG_STORE_H_
-#define OPENCBDC_TX_SRC_RAFT_LOG_STORE_H_
+#ifndef CBDC_UNIVERSE0_SRC_RAFT_LOG_STORE_H_
+#define CBDC_UNIVERSE0_SRC_RAFT_LOG_STORE_H_
 
 #include "index_comparator.hpp"
 
 #include <leveldb/db.h>
 #include <libnuraft/log_store.hxx>
 #include <mutex>
+#include <map>
 
 namespace cbdc::raft {
     /// NuRaft log_store implementation using LevelDB.
     class log_store : public nuraft::log_store {
       public:
-        log_store() = default;
+        log_store();
         ~log_store() override = default;
 
         log_store(const log_store& other) = delete;
@@ -43,6 +44,7 @@ namespace cbdc::raft {
         /// \return log entry.
         [[nodiscard]] auto last_entry() const
             -> nuraft::ptr<nuraft::log_entry> override;
+
 
         /// Append the given log entry to the end of the log.
         /// \param entry log entry to append.
@@ -104,16 +106,14 @@ namespace cbdc::raft {
         auto flush() -> bool override;
 
       private:
-        std::unique_ptr<leveldb::DB> m_db{};
+        static auto make_clone(const nuraft::ptr<nuraft::log_entry>& entry) -> nuraft::ptr<nuraft::log_entry>;
+
         mutable std::mutex m_db_mut{};
         uint64_t m_next_idx{};
         uint64_t m_start_idx{};
-
-        leveldb::ReadOptions m_read_opt;
-        leveldb::WriteOptions m_write_opt;
-
+        std::map<uint64_t, nuraft::ptr<nuraft::log_entry>> m_db{};
         index_comparator m_cmp;
     };
 }
 
-#endif // OPENCBDC_TX_SRC_RAFT_LOG_STORE_H_
+#endif // CBDC_UNIVERSE0_SRC_RAFT_LOG_STORE_H_
