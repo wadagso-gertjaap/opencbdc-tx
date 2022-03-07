@@ -136,10 +136,7 @@ namespace cbdc::atomizer {
 
     void controller::tx_notify_handler() {
         while(m_running) {
-            if(!m_raft_node.send_complete_txs([&](auto&& res, auto&& err) {
-                   err_return_handler(std::forward<decltype(res)>(res),
-                                      std::forward<decltype(err)>(err));
-               })) {
+            if(!m_raft_node.send_complete_txs(nullptr)) {
                 static constexpr auto batch_send_delay
                     = std::chrono::milliseconds(20);
                 std::this_thread::sleep_for(batch_send_delay);
@@ -160,11 +157,7 @@ namespace cbdc::atomizer {
             if(m_raft_node.is_leader()) {
                 auto req = make_block_request();
                 auto res
-                    = m_raft_node.make_request(req, [&](auto&& r, auto&& err) {
-                          raft_result_handler(
-                              std::forward<decltype(r)>(r),
-                              std::forward<decltype(err)>(err));
-                      });
+                    = m_raft_node.make_request(req, nullptr);
                 if(!res) {
                     m_logger->error("Failed to make block at time",
                                     last_time.time_since_epoch().count());
