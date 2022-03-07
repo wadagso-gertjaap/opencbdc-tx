@@ -93,8 +93,11 @@ namespace cbdc::atomizer {
         /// \return a pair containing the resultant block and errors to forward
         ///         to the watchtower if necessary.
         [[nodiscard]] auto make_block()
-            -> std::pair<cbdc::atomizer::block,
-                         std::vector<watchtower::tx_error>>;
+            -> uint64_t;
+
+        [[nodiscard]] auto get_block(uint64_t height) -> std::optional<std::shared_ptr<cbdc::atomizer::block>>;
+
+        void prune(uint64_t height);
 
         /// Returns the number of complete transactions waiting to be
         /// included in the next block.
@@ -117,11 +120,6 @@ namespace cbdc::atomizer {
         auto operator==(const atomizer& other) const -> bool;
 
       private:
-        std::vector<std::unordered_map<transaction::compact_tx,
-                                       std::unordered_set<uint32_t>,
-                                       transaction::compact_tx_hasher>>
-            m_txs;
-
         // These maps should be keyed/salted for safety. For now they
         // use input values directly as an optimization.
         std::vector<transaction::compact_tx> m_complete_txs;
@@ -144,6 +142,8 @@ namespace cbdc::atomizer {
             -> std::optional<watchtower::tx_error>;
 
         void add_tx_to_stxo_cache(const transaction::compact_tx& tx);
+
+        std::unordered_map<uint64_t, std::shared_ptr<cbdc::atomizer::block>> m_blocks;
 
         cbdc::event_sampler m_event_sampler;
     };

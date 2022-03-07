@@ -11,126 +11,30 @@
 #include "util/serialization/format.hpp"
 
 namespace cbdc::atomizer {
-    auto atomizer::make_block()
-        -> std::pair<block, std::vector<cbdc::watchtower::tx_error>> {
-        const auto start = std::chrono::high_resolution_clock::now();
-        block blk;
+    static constexpr auto initial_spent_cache_size = 500000;
 
-        blk.m_transactions.swap(m_complete_txs);
+    auto atomizer::make_block() -> uint64_t {
+        const auto start = std::chrono::high_resolution_clock::now();
+        auto blk = std::make_shared<block>();
+
+        blk->m_transactions.swap(m_complete_txs);
 
         m_best_height++;
 
-        std::vector<cbdc::watchtower::tx_error> errs;
-        for(auto&& tx : m_txs[m_spent_cache_depth]) {
-            errs.push_back(cbdc::watchtower::tx_error{
-                tx.first.m_id,
-                cbdc::watchtower::tx_error_incomplete{}});
-        }
-
         for(size_t i = m_spent_cache_depth; i > 0; i--) {
             m_spent[i] = std::move(m_spent[i - 1]);
-            m_txs[i] = std::move(m_txs[i - 1]);
         }
 
         m_spent[0].clear();
-        m_txs[0].clear();
-        static constexpr auto initial_spent_cache_size = 500000;
-        m_spent[0].reserve(initial_spent_cache_size);
+        m_spent[0].max_load_factor(std::numeric_limits<float>::max());
+        m_spent[0].rehash(initial_spent_cache_size);
 
-        blk.m_height = m_best_height;
-
-        m_event_sampler.append(sampled_event_type::make_block, start, blk.m_transactions.size());
-        return {blk, errs};
-    }
-
-    auto atomizer::insert(const uint64_t block_height,
-                          transaction::compact_tx tx,
-                          std::unordered_set<uint32_t> attestations)
-        -> std::optional<cbdc::watchtower::tx_error> {
-        const auto height_offset = get_notification_offset(block_height);
-
-        auto offset_err = check_notification_offset(height_offset, tx);
-        if(offset_err) {
-            return offset_err;
-        }
-
-        // Search the incomplete transactions vector for this notification's
-        // block height offset. Note, we might be able to defer this insertion
-        // until after we've checked if the transaction is complete.
-        auto it = m_txs[height_offset].find(tx);
-        if(it == m_txs[height_offset].end()) {
-            // If we did not already receive a notification of this transaction
-            // for its height offset, insert the transaction and its
-            // attestations into the pending vector.
-            it = m_txs[height_offset]
-                     .insert({std::move(tx), std::move(attestations)})
-                     .first;
-        } else {
-            // Otherwise merge the new set of attestations with the existing
-            // set.
-            it->second.insert(attestations.begin(), attestations.end());
-        }
-
-        std::unordered_set<uint32_t> total_attestations;
-        size_t oldest_attestation{0};
-        std::map<size_t, decltype(m_txs)::value_type::const_iterator> tx_its;
-
-        // Iterate over each height offset in the incomplete transactions
-        // vector to accumulate the sets of attestations received for any
-        // offset in our cache.
-        for(size_t offset = 0; offset <= m_spent_cache_depth; offset++) {
-            const auto& tx_map = m_txs[offset];
-
-            // Check if we received a notification of this TX for the given
-            // height offset.
-            const auto tx_it = tx_map.find(it->first);
-            if(tx_it != tx_map.end()) {
-                // Merge the attestations from this offset with the full set of
-                // attestations so far.
-                total_attestations.insert(tx_it->second.begin(),
-                                          tx_it->second.end());
-
-                // Keep track of the oldest height offset that we're using
-                // an attestation from.
-                oldest_attestation = offset;
-
-                // Store the iterator to the transaction in the incomplete TXs
-                // vector for the given height offset so we can quickly access
-                // it later.
-                tx_its.emplace(offset, tx_it);
-            }
-        }
-
-        const auto& txit = it->first;
-
-        auto cache_check_range = oldest_attestation;
-
-        // Check whether this transaction now has attestations for each of its
-        // inputs.
-        if(total_attestations.size() == txit.m_inputs.size()) {
-            auto err_set = check_stxo_cache(txit, cache_check_range);
-            if(err_set) {
-                return err_set;
-            }
-
-            add_tx_to_stxo_cache(txit);
-
-            // For each of the incomplete transaction notifications we
-            // recovered while accumulating attestations, either extract the TX
-            // from the oldest notification and move it to the complete TXs
-            // vector, or erase the TX notification.
-            for(const auto& pending_offset : tx_its) {
-                if(pending_offset.first == oldest_attestation) {
-                    auto tx_ext = m_txs[pending_offset.first].extract(
-                        pending_offset.second);
-                    m_complete_txs.push_back(std::move(tx_ext.key()));
-                } else {
-                    m_txs[pending_offset.first].erase(pending_offset.second);
-                }
-            }
-        }
-
-        return std::nullopt;
+        blk->m_height = m_best_height;
+        m_blocks.insert(std::make_pair(m_best_height, blk));
+        m_event_sampler.append(sampled_event_type::make_block,
+                               start,
+                               blk->m_transactions.size());
+        return m_best_height;
     }
 
     auto atomizer::insert_complete(uint64_t oldest_attestation,
@@ -141,8 +45,9 @@ namespace cbdc::atomizer {
 
         auto offset_err = check_notification_offset(height_offset, tx);
         if(offset_err) {
-	        m_event_sampler.append(sampled_event_type::discarded_expired, start);
-	        return offset_err;
+            m_event_sampler.append(sampled_event_type::discarded_expired,
+                                   start);
+            return offset_err;
         }
 
         auto cache_check_range = height_offset;
@@ -160,6 +65,25 @@ namespace cbdc::atomizer {
         return std::nullopt;
     }
 
+    auto atomizer::get_block(uint64_t height)
+        -> std::optional<std::shared_ptr<cbdc::atomizer::block>> {
+        auto it = m_blocks.find(height);
+        if(it == m_blocks.end()) {
+            return std::nullopt;
+        }
+        return it->second;
+    }
+
+    void atomizer::prune(uint64_t height) {
+        for(auto it = m_blocks.begin(); it != m_blocks.end();) {
+            if(it->second->m_height < height) {
+                it = m_blocks.erase(it);
+            } else {
+                it++;
+            }
+        }
+    }
+
     auto atomizer::pending_transactions() const -> size_t {
         return m_complete_txs.size();
     }
@@ -173,8 +97,11 @@ namespace cbdc::atomizer {
         : m_best_height(best_height),
           m_spent_cache_depth(stxo_cache_depth),
           m_event_sampler("atomizer") {
-        m_txs.resize(stxo_cache_depth + 1);
         m_spent.resize(stxo_cache_depth + 1);
+        for(size_t i = 0; i < m_spent_cache_depth; i++) {
+            m_spent[i].max_load_factor(std::numeric_limits<float>::max());
+            m_spent[i].rehash(initial_spent_cache_size);
+        }
     }
 
     auto atomizer::serialize() -> cbdc::buffer {
@@ -182,7 +109,7 @@ namespace cbdc::atomizer {
         auto ser = cbdc::buffer_serializer(buf);
 
         ser << static_cast<uint64_t>(m_spent_cache_depth) << m_best_height
-            << m_complete_txs << m_spent << m_txs;
+            << m_complete_txs << m_spent;
 
         return buf;
     }
@@ -192,14 +119,12 @@ namespace cbdc::atomizer {
 
         m_spent.clear();
 
-        m_txs.clear();
-
         buf >> m_spent_cache_depth >> m_best_height >> m_complete_txs
-            >> m_spent >> m_txs;
+            >> m_spent;
     }
 
     auto atomizer::operator==(const atomizer& other) const -> bool {
-        return m_txs == other.m_txs && m_complete_txs == other.m_complete_txs
+        return m_complete_txs == other.m_complete_txs
             && m_spent == other.m_spent && m_best_height == other.m_best_height
             && m_spent_cache_depth == other.m_spent_cache_depth;
     }

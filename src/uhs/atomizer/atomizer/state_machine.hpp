@@ -124,6 +124,7 @@ namespace cbdc::atomizer {
             std::shared_ptr<blockstore_t> m_blocks{};
         };
 
+        [[nodiscard]] auto get_block(uint64_t height) -> std::optional<std::shared_ptr<cbdc::atomizer::block>>;
       private:
         [[nodiscard]] auto get_snapshot_path(uint64_t idx) const
             -> std::string;

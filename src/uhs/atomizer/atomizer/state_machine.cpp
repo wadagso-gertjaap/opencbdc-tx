@@ -75,28 +75,18 @@ namespace cbdc::atomizer {
                 },
                 [&](const make_block_request& /* r */)
                     -> std::optional<response> {
-                    auto [blk, errs] = m_atomizer->make_block();
-                    m_blocks->emplace(blk.m_height, blk);
-                    auto empty_blk = block();
-                    empty_blk.m_height = blk.m_height;
-                    errs.clear();
-                    return make_block_response{empty_blk, errs};
+                    auto height = m_atomizer->make_block();
+                    return make_block_response{height};
                 },
                 [&](const get_block_request& r) -> std::optional<response> {
                     auto it = m_blocks->find(r.m_block_height);
                     if(it != m_blocks->end()) {
-                        return get_block_response{it->second};
+                        return get_block_response{r.m_block_height};
                     }
                     return std::nullopt;
                 },
                 [&](const prune_request& r) -> std::optional<response> {
-                    for(auto it = m_blocks->begin(); it != m_blocks->end();) {
-                        if(it->second.m_height < r.m_block_height) {
-                            it = m_blocks->erase(it);
-                        } else {
-                            it++;
-                        }
-                    }
+                    m_atomizer->prune(r.m_block_height);
                     return std::nullopt;
                 },
             },
@@ -330,5 +320,9 @@ namespace cbdc::atomizer {
         }
         snp.m_snp->set_size(sz);
         return snp;
+    }
+
+    auto state_machine::get_block(uint64_t height) -> std::optional<std::shared_ptr<cbdc::atomizer::block>> {
+        return m_atomizer->get_block(height);
     }
 }

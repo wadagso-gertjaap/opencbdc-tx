@@ -111,43 +111,24 @@ namespace cbdc::atomizer {
         }
 
         std::visit(
-            overloaded{
-                [&](tx_notify_request& notif) {
-                    m_raft_node.tx_notify(std::move(notif));
-                    m_event_sampler.append(
-                        sampled_event_type::server_handler_tx_notify,
-                        start);
-                },
-                [&](const prune_request& p) {
-                    m_raft_node.make_request(p, nullptr);
-                },
-                [&](const get_block_request& g) {
-                    auto result_fn = [&, peer_id = pkt.m_peer_id](
-                                         raft::result_type& r,
-                                         nuraft::ptr<std::exception>& err) {
-                        if(err) {
-                            m_logger->error("Exception handling log entry:",
-                                            err->what());
-                            return;
-                        }
-
-                        const auto res = r.get();
-                        if(!res) {
-                            m_logger->error("Requested block not found.");
-                            return;
-                        }
-
-                        auto maybe_resp
-                            = from_buffer<state_machine::response>(*res);
-                        assert(maybe_resp.has_value());
-                        assert(std::holds_alternative<get_block_response>(
-                            maybe_resp.value()));
-                        auto& resp
-                            = std::get<get_block_response>(maybe_resp.value());
-                        m_atomizer_network.send(resp.m_blk, peer_id);
-                    };
-                    m_raft_node.make_request(g, result_fn);
-                }},
+            overloaded{[&](tx_notify_request& notif) {
+                           m_raft_node.tx_notify(std::move(notif));
+                           m_event_sampler.append(
+                               sampled_event_type::server_handler_tx_notify,
+                               start);
+                       },
+                       [&](const prune_request& p) {
+                           m_raft_node.make_request(p, nullptr);
+                       },
+                       [&](const get_block_request& g) {
+                           auto maybe_blk
+                               = m_raft_node.get_block(g.m_block_height);
+                           if(maybe_blk.has_value()) {
+                               auto blk = maybe_blk.value();
+                               auto blk_pkt = make_shared_buffer(*blk);
+                               m_atomizer_network.send(blk_pkt, pkt.m_peer_id);
+                           }
+                       }},
             maybe_req.value());
 
         return std::nullopt;
@@ -197,6 +178,7 @@ namespace cbdc::atomizer {
         if(err) {
             return;
         }
+
         const auto res = r.get();
         assert(res);
         auto maybe_resp = from_buffer<state_machine::response>(*res);
@@ -205,23 +187,19 @@ namespace cbdc::atomizer {
             std::holds_alternative<make_block_response>(maybe_resp.value()));
         auto& resp = std::get<make_block_response>(maybe_resp.value());
 
-        auto blk_pkt = make_shared_buffer(resp.m_blk);
-
-        m_atomizer_network.broadcast(blk_pkt);
+        auto maybe_blk = m_raft_node.get_block(resp.m_block_height);
+        if(maybe_blk.has_value()) {
+            auto blk = maybe_blk.value();
+            auto blk_pkt = make_shared_buffer(*blk);
+            m_atomizer_network.broadcast(blk_pkt);
+        }
 
         m_logger->info("Block h:",
-                       resp.m_blk.m_height,
-                       ", nTXs:",
-                       resp.m_blk.m_transactions.size(),
+                       resp.m_block_height,
                        ", log idx:",
                        m_raft_node.last_log_idx(),
                        ", notifications:",
                        m_raft_node.tx_notify_count());
-
-        if(!resp.m_errs.empty()) {
-            auto buf = make_shared_buffer(resp.m_errs);
-            m_watchtower_network.broadcast(buf);
-        }
     }
 
     void controller::err_return_handler(raft::result_type& r,

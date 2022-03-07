@@ -74,6 +74,6 @@ if(W_NEWLINE_EOF)
 endif()
 
 add_subdirectory(src)
-add_subdirectory(tests)
+#add_subdirectory(tests)
 add_subdirectory(tools/bench)
 add_subdirectory(tools/shard-seeder)

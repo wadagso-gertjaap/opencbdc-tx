@@ -64,6 +64,8 @@ namespace cbdc::atomizer {
         /// \param notif transaction notification.
         void tx_notify(tx_notify_request&& notif);
 
+        [[nodiscard]] auto get_block(uint64_t height) -> std::optional<std::shared_ptr<cbdc::atomizer::block>>;
+
         /// Replicate a transaction notification command in the state machine
         /// containing the current set of complete transactions.
         /// \param result_fn function to call with the state machine execution

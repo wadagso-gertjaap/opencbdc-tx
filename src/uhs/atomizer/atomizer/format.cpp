@@ -116,19 +116,19 @@ namespace cbdc {
 
     auto operator<<(serializer& ser, const atomizer::make_block_response& r)
         -> serializer& {
-        return ser << r.m_blk << r.m_errs;
+        return ser << r.m_block_height;
     }
     auto operator>>(serializer& deser, atomizer::make_block_response& r)
         -> serializer& {
-        return deser >> r.m_blk >> r.m_errs;
+        return deser >> r.m_block_height;
     }
 
     auto operator<<(serializer& ser, const atomizer::get_block_response& r)
         -> serializer& {
-        return ser << r.m_blk;
+        return ser << r.m_block_height;
     }
     auto operator>>(serializer& deser, atomizer::get_block_response& r)
         -> serializer& {
-        return deser >> r.m_blk;
+        return deser >> r.m_block_height;
     }
 }

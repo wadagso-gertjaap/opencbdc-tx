@@ -114,6 +114,11 @@ namespace cbdc::atomizer {
         return res;
     }
 
+    auto atomizer_raft::get_block(uint64_t height)
+        -> std::optional<std::shared_ptr<cbdc::atomizer::block>> {
+        return get_sm()->get_block(height);
+    }
+
     auto atomizer_raft::attestation_hash::operator()(
         const atomizer_raft::attestation& pair) const -> size_t {
         return std::hash<decltype(pair.first)>()(pair.first);
