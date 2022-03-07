@@ -146,10 +146,12 @@ namespace cbdc::atomizer {
         while(m_running) {
             uint64_t height{};
             if(m_pending_blocks.pop(height)) {
-                m_logger->warn("Publishing block h:",
-                       resp.m_block_height);
+                m_logger->warn("Fetching block h:",
+                       height);
                 auto maybe_blk = m_raft_node.get_block(height);
                 if(maybe_blk.has_value()) {
+                    m_logger->warn("Publishing block h:",
+                       height);
                     auto blk = maybe_blk.value();
                     auto blk_pkt = make_shared_buffer(*blk);
                     if(blk_pkt->size() == 0) {}
