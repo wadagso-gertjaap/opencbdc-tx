@@ -155,7 +155,7 @@ namespace cbdc::atomizer {
                     auto blk = maybe_blk.value();
                     auto blk_pkt = make_shared_buffer(*blk);
                     if(blk_pkt->size() == 0) {}
-                    //m_atomizer_network.broadcast(blk_pkt);
+                    m_atomizer_network.broadcast(blk_pkt);
                 }
             } else {
                 m_logger->warn("Ending publishing loop");
