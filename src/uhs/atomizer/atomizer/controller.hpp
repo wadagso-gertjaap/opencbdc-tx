@@ -9,8 +9,10 @@
 #include "atomizer_raft.hpp"
 #include "uhs/atomizer/atomizer/block.hpp"
 #include "util/common/config.hpp"
+#include "util/common/blocking_queue.hpp"
 #include "util/network/connection_manager.hpp"
 #include "util/event_sampler/event_sampler.hpp"
+
 
 #include <memory>
 
@@ -50,16 +52,21 @@ namespace cbdc::atomizer {
         std::queue<cbdc::network::message_t> m_pending_txnotify{};
         std::atomic_bool m_running{true};
 
+        blocking_queue<uint64_t> m_pending_blocks;
+
         cbdc::network::connection_manager m_watchtower_network;
         cbdc::network::connection_manager m_atomizer_network;
 
         std::thread m_atomizer_server;
         std::thread m_tx_notify_thread;
         std::thread m_main_thread;
+        std::thread m_block_publish_thread;
+
 
         auto server_handler(cbdc::network::message_t&& pkt)
             -> std::optional<cbdc::buffer>;
         void tx_notify_handler();
+        void send_block_handler();
         void main_handler();
         void raft_result_handler(raft::result_type& r,
                                  nuraft::ptr<std::exception>& err);

@@ -44,6 +44,10 @@ namespace cbdc::atomizer {
             m_tx_notify_thread.join();
         }
 
+        if(m_block_publish_thread.joinable()) {
+            m_block_publish_thread.join();
+        }
+
         if(m_atomizer_server.joinable()) {
             m_atomizer_server.join();
         }
@@ -90,6 +94,10 @@ namespace cbdc::atomizer {
             }};
         }
 
+        m_block_publish_thread = std::thread{[&] {
+            send_block_handler();
+        }};
+
         m_main_thread = std::thread{[&] {
             main_handler();
         }};
@@ -134,9 +142,32 @@ namespace cbdc::atomizer {
         return std::nullopt;
     }
 
+    void controller::send_block_handler() {
+        while(m_running) {
+            uint64_t height{};
+            if(m_pending_blocks.pop(height)) {
+                m_logger->warn("Publishing block h:",
+                       resp.m_block_height);
+                auto maybe_blk = m_raft_node.get_block(height);
+                if(maybe_blk.has_value()) {
+                    auto blk = maybe_blk.value();
+                    auto blk_pkt = make_shared_buffer(*blk);
+                    if(blk_pkt->size() == 0) {}
+                    //m_atomizer_network.broadcast(blk_pkt);
+                }
+            } else {
+                m_logger->warn("Ending publishing loop");
+                break;
+            }
+        }
+    }
+
     void controller::tx_notify_handler() {
         while(m_running) {
-            if(!m_raft_node.send_complete_txs(nullptr)) {
+            if(!m_raft_node.send_complete_txs([&](auto&& res, auto&& err) {
+                   err_return_handler(std::forward<decltype(res)>(res),
+                                      std::forward<decltype(err)>(err));
+               })) {
                 static constexpr auto batch_send_delay
                     = std::chrono::milliseconds(20);
                 std::this_thread::sleep_for(batch_send_delay);
@@ -157,7 +188,11 @@ namespace cbdc::atomizer {
             if(m_raft_node.is_leader()) {
                 auto req = make_block_request();
                 auto res
-                    = m_raft_node.make_request(req, nullptr);
+                    = m_raft_node.make_request(req, [&](auto&& r, auto&& err) {
+                          raft_result_handler(
+                              std::forward<decltype(r)>(r),
+                              std::forward<decltype(err)>(err));
+                      });
                 if(!res) {
                     m_logger->error("Failed to make block at time",
                                     last_time.time_since_epoch().count());
@@ -173,19 +208,10 @@ namespace cbdc::atomizer {
         }
 
         const auto res = r.get();
-        assert(res);
         auto maybe_resp = from_buffer<state_machine::response>(*res);
-        assert(maybe_resp.has_value());
-        assert(
-            std::holds_alternative<make_block_response>(maybe_resp.value()));
         auto& resp = std::get<make_block_response>(maybe_resp.value());
 
-        auto maybe_blk = m_raft_node.get_block(resp.m_block_height);
-        if(maybe_blk.has_value()) {
-            auto blk = maybe_blk.value();
-            auto blk_pkt = make_shared_buffer(*blk);
-            m_atomizer_network.broadcast(blk_pkt);
-        }
+        m_pending_blocks.push(resp.m_block_height);
 
         m_logger->info("Block h:",
                        resp.m_block_height,
@@ -217,8 +243,8 @@ namespace cbdc::atomizer {
                                    nuraft::cb_func::Param* /* param */)
         -> nuraft::cb_func::ReturnCode {
         if(type == nuraft::cb_func::Type::BecomeFollower) {
-            // We became a follower so shutdown the client network handler and
-            // stop listening.
+            // We became a follower so shutdown the client network handler
+            // and stop listening.
             m_atomizer_network.close();
             if(m_atomizer_server.joinable()) {
                 m_atomizer_server.join();
