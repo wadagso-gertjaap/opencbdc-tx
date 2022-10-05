@@ -6,6 +6,7 @@ var transaction_8hpp =
     [ "cbdc::transaction::full_tx", "structcbdc_1_1transaction_1_1full__tx.html", "structcbdc_1_1transaction_1_1full__tx" ],
     [ "cbdc::transaction::compact_tx", "structcbdc_1_1transaction_1_1compact__tx.html", "structcbdc_1_1transaction_1_1compact__tx" ],
     [ "cbdc::transaction::compact_tx_hasher", "structcbdc_1_1transaction_1_1compact__tx__hasher.html", "structcbdc_1_1transaction_1_1compact__tx__hasher" ],
+    [ "sentinel_attestation", "transaction_8hpp.html#a3156c1db13a82c955dcd53f78939b422", null ],
     [ "input_from_output", "transaction_8hpp.html#a009ccb08edfcc1b3bd0dd1c96313a21b", null ],
     [ "input_from_output", "transaction_8hpp.html#a565b4f45e6f928ae432420f675fd3860", null ],
     [ "tx_id", "transaction_8hpp.html#a43a4b189920471ef5363e91bc908a892", null ],

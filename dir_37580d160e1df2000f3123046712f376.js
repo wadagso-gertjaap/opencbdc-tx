@@ -7,7 +7,5 @@ var dir_37580d160e1df2000f3123046712f376 =
     [ "validation.cpp", "validation_8cpp.html", "validation_8cpp" ],
     [ "validation.hpp", "validation_8hpp.html", "validation_8hpp" ],
     [ "wallet.cpp", "wallet_8cpp.html", null ],
-    [ "wallet.hpp", "wallet_8hpp.html", [
-      [ "cbdc::transaction::wallet", "classcbdc_1_1transaction_1_1wallet.html", "classcbdc_1_1transaction_1_1wallet" ]
-    ] ]
+    [ "wallet.hpp", "wallet_8hpp.html", "wallet_8hpp" ]
 ];

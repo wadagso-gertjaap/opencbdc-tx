@@ -8,6 +8,7 @@ var namespacecbdc_1_1transaction =
     [ "out_point", "structcbdc_1_1transaction_1_1out__point.html", "structcbdc_1_1transaction_1_1out__point" ],
     [ "output", "structcbdc_1_1transaction_1_1output.html", "structcbdc_1_1transaction_1_1output" ],
     [ "wallet", "classcbdc_1_1transaction_1_1wallet.html", "classcbdc_1_1transaction_1_1wallet" ],
+    [ "sentinel_attestation", "namespacecbdc_1_1transaction.html#a3156c1db13a82c955dcd53f78939b422", null ],
     [ "input_from_output", "namespacecbdc_1_1transaction.html#a009ccb08edfcc1b3bd0dd1c96313a21b", null ],
     [ "input_from_output", "namespacecbdc_1_1transaction.html#a565b4f45e6f928ae432420f675fd3860", null ],
     [ "tx_id", "namespacecbdc_1_1transaction.html#a43a4b189920471ef5363e91bc908a892", null ],

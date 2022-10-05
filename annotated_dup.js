@@ -100,9 +100,11 @@ var annotated_dup =
         ] ],
         [ "async_interface", "classcbdc_1_1sentinel_1_1async__interface.html", "classcbdc_1_1sentinel_1_1async__interface" ],
         [ "controller", "classcbdc_1_1sentinel_1_1controller.html", "classcbdc_1_1sentinel_1_1controller" ],
+        [ "execute_request", "structcbdc_1_1sentinel_1_1execute__request.html", null ],
+        [ "execute_response", "structcbdc_1_1sentinel_1_1execute__response.html", "structcbdc_1_1sentinel_1_1execute__response" ],
         [ "interface", "classcbdc_1_1sentinel_1_1interface.html", "classcbdc_1_1sentinel_1_1interface" ],
-        [ "response", "structcbdc_1_1sentinel_1_1response.html", "structcbdc_1_1sentinel_1_1response" ],
-        [ "shard_info", "structcbdc_1_1sentinel_1_1shard__info.html", "structcbdc_1_1sentinel_1_1shard__info" ]
+        [ "shard_info", "structcbdc_1_1sentinel_1_1shard__info.html", "structcbdc_1_1sentinel_1_1shard__info" ],
+        [ "validate_request", "structcbdc_1_1sentinel_1_1validate__request.html", null ]
       ] ],
       [ "sentinel_2pc", "namespacecbdc_1_1sentinel__2pc.html", [
         [ "controller", "classcbdc_1_1sentinel__2pc_1_1controller.html", "classcbdc_1_1sentinel__2pc_1_1controller" ]
@@ -147,7 +149,7 @@ var annotated_dup =
         [ "watchtower", "classcbdc_1_1watchtower_1_1watchtower.html", "classcbdc_1_1watchtower_1_1watchtower" ]
       ] ],
       [ "atomizer_client", "classcbdc_1_1atomizer__client.html", "classcbdc_1_1atomizer__client" ],
-      [ "blocking_queue", "classcbdc_1_1blocking__queue.html", "classcbdc_1_1blocking__queue" ],
+      [ "blocking_queue_internal", "classcbdc_1_1blocking__queue__internal.html", "classcbdc_1_1blocking__queue__internal" ],
       [ "buffer", "classcbdc_1_1buffer.html", "classcbdc_1_1buffer" ],
       [ "buffer_serializer", "classcbdc_1_1buffer__serializer.html", "classcbdc_1_1buffer__serializer" ],
       [ "cache_set", "classcbdc_1_1cache__set.html", "classcbdc_1_1cache__set" ],

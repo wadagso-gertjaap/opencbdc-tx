@@ -5,7 +5,7 @@ var searchData=
   ['handle_5fstatus_5fupdate_5frequest_2',['handle_status_update_request',['../classcbdc_1_1watchtower_1_1watchtower.html#a45224ad2f090fa65ac93eb15eaaab59b',1,'cbdc::watchtower::watchtower']]],
   ['handler_3',['handler',['../classcbdc_1_1rpc_1_1blocking__server.html#a9d3cf6598558f23fb36c159bebf82a67',1,'cbdc::rpc::blocking_server::handler()'],['../classcbdc_1_1rpc_1_1async__server.html#a3d1bb19a4b95dce843df76bb549fd88a',1,'cbdc::rpc::async_server::handler()']]],
   ['handler_5ftype_4',['handler_type',['../namespacecbdc_1_1rpc.html#a99de594296f8d84984dc7cf1506d72a9',1,'cbdc::rpc']]],
-  ['hash_5',['hash',['../structcbdc_1_1transaction_1_1input.html#abb3bd55f37b41f06791f9c69347b0c88',1,'cbdc::transaction::input']]],
+  ['hash_5',['hash',['../structcbdc_1_1transaction_1_1compact__tx.html#a1210eb13faff2ba8cc62ff1dced6b108',1,'cbdc::transaction::compact_tx::hash()'],['../structcbdc_1_1transaction_1_1input.html#abb3bd55f37b41f06791f9c69347b0c88',1,'cbdc::transaction::input::hash()']]],
   ['hash_2ecpp_6',['hash.cpp',['../hash_8cpp.html',1,'']]],
   ['hash_2ehpp_7',['hash.hpp',['../hash_8hpp.html',1,'']]],
   ['hash_5fdata_8',['hash_data',['../namespacecbdc.html#a683b1822c4294075ddecf27a8774d76e',1,'cbdc']]],

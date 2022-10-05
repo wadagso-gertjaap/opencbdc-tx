@@ -29,6 +29,7 @@ var validation_8hpp =
     [ "witness_program_type", "validation_8hpp.html#acc831384037ec60d9f910d1557c62bf1", [
       [ "p2pk", "validation_8hpp.html#acc831384037ec60d9f910d1557c62bf1a6c273932270d3597a90936b79babc832", null ]
     ] ],
+    [ "check_attestations", "validation_8hpp.html#a6036a137d32c6ee72a9d6dd33588a81f", null ],
     [ "check_in_out_set", "validation_8hpp.html#afd1058c34035553ee415c69885f12a8f", null ],
     [ "check_input_count", "validation_8hpp.html#abeb1b2b8bc2fd32358b460bb86b53d34", null ],
     [ "check_input_set", "validation_8hpp.html#a19a9e7e41435f482b21c5ba94c6c4eef", null ],

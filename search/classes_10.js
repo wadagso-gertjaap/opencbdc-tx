@@ -1,7 +1,7 @@
 var searchData=
 [
   ['tcp_5fclient_0',['tcp_client',['../classcbdc_1_1rpc_1_1tcp__client.html',1,'cbdc::rpc']]],
-  ['tcp_5fclient_3c_20cbdc_3a_3atransaction_3a_3afull_5ftx_2c_20cbdc_3a_3asentinel_3a_3aresponse_20_3e_1',['tcp_client&lt; cbdc::transaction::full_tx, cbdc::sentinel::response &gt;',['../classcbdc_1_1rpc_1_1tcp__client.html',1,'cbdc::rpc']]],
+  ['tcp_5fclient_3c_20request_2c_20response_20_3e_1',['tcp_client&lt; request, response &gt;',['../classcbdc_1_1rpc_1_1tcp__client.html',1,'cbdc::rpc']]],
   ['tcp_5flistener_2',['tcp_listener',['../classcbdc_1_1network_1_1tcp__listener.html',1,'cbdc::network']]],
   ['tcp_5fserver_3',['tcp_server',['../classcbdc_1_1rpc_1_1tcp__server.html',1,'cbdc::rpc']]],
   ['tcp_5fsocket_4',['tcp_socket',['../classcbdc_1_1network_1_1tcp__socket.html',1,'cbdc::network']]],

@@ -17,6 +17,8 @@ var config_8cpp =
     [ "get_sentinel_endpoint_key", "config_8cpp.html#a26c6481b70e8a63d9ade96344838d50e", null ],
     [ "get_sentinel_key_prefix", "config_8cpp.html#aa6d96a1c6792fe174108d3cc5d4585bd", null ],
     [ "get_sentinel_loglevel_key", "config_8cpp.html#abcec88d37e7e0298bcd244767d639be5", null ],
+    [ "get_sentinel_private_key_key", "config_8cpp.html#ae4f0a1a6ed533a8434dbbbd00b8af9bb", null ],
+    [ "get_sentinel_public_key_key", "config_8cpp.html#ab293ffa0995cecca448c0756ddadbac7", null ],
     [ "get_shard_db_key", "config_8cpp.html#ab094a355e5689cee6bc0d725fea6b2bc", null ],
     [ "get_shard_end_key", "config_8cpp.html#a1b6808f780a93ecad31453fef947dff8", null ],
     [ "get_shard_endpoint_key", "config_8cpp.html#a156d9dde7e6e6381fa15971202b4d488", null ],

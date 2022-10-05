@@ -3,7 +3,7 @@ var searchData=
   ['cache_5fset_0',['cache_set',['../classcbdc_1_1cache__set.html',1,'cbdc']]],
   ['cache_5fset_3c_20hash_5ft_2c_20cbdc_3a_3ahashing_3a_3anull_20_3e_1',['cache_set&lt; hash_t, cbdc::hashing::null &gt;',['../classcbdc_1_1cache__set.html',1,'cbdc']]],
   ['client_2',['client',['../classcbdc_1_1archiver_1_1client.html',1,'cbdc::archiver::client'],['../classcbdc_1_1client.html',1,'cbdc::client'],['../classcbdc_1_1coordinator_1_1rpc_1_1client.html',1,'cbdc::coordinator::rpc::client'],['../classcbdc_1_1locking__shard_1_1rpc_1_1client.html',1,'cbdc::locking_shard::rpc::client'],['../classcbdc_1_1rpc_1_1client.html',1,'cbdc::rpc::client&lt; Request, Response &gt;'],['../classcbdc_1_1sentinel_1_1rpc_1_1client.html',1,'cbdc::sentinel::rpc::client']]],
-  ['client_3c_20cbdc_3a_3atransaction_3a_3afull_5ftx_2c_20cbdc_3a_3asentinel_3a_3aresponse_20_3e_3',['client&lt; cbdc::transaction::full_tx, cbdc::sentinel::response &gt;',['../classcbdc_1_1rpc_1_1client.html',1,'cbdc::rpc']]],
+  ['client_3c_20request_2c_20response_20_3e_3',['client&lt; request, response &gt;',['../classcbdc_1_1rpc_1_1client.html',1,'cbdc::rpc']]],
   ['compact_5ftx_4',['compact_tx',['../structcbdc_1_1transaction_1_1compact__tx.html',1,'cbdc::transaction']]],
   ['compact_5ftx_5fhasher_5',['compact_tx_hasher',['../structcbdc_1_1transaction_1_1compact__tx__hasher.html',1,'cbdc::transaction']]],
   ['connection_5fmanager_6',['connection_manager',['../classcbdc_1_1network_1_1connection__manager.html',1,'cbdc::network']]],

@@ -21,6 +21,8 @@ var namespacecbdc_1_1config =
     [ "get_sentinel_endpoint_key", "namespacecbdc_1_1config.html#a26c6481b70e8a63d9ade96344838d50e", null ],
     [ "get_sentinel_key_prefix", "namespacecbdc_1_1config.html#aa6d96a1c6792fe174108d3cc5d4585bd", null ],
     [ "get_sentinel_loglevel_key", "namespacecbdc_1_1config.html#abcec88d37e7e0298bcd244767d639be5", null ],
+    [ "get_sentinel_private_key_key", "namespacecbdc_1_1config.html#ae4f0a1a6ed533a8434dbbbd00b8af9bb", null ],
+    [ "get_sentinel_public_key_key", "namespacecbdc_1_1config.html#ab293ffa0995cecca448c0756ddadbac7", null ],
     [ "get_shard_db_key", "namespacecbdc_1_1config.html#ab094a355e5689cee6bc0d725fea6b2bc", null ],
     [ "get_shard_end_key", "namespacecbdc_1_1config.html#a1b6808f780a93ecad31453fef947dff8", null ],
     [ "get_shard_endpoint_key", "namespacecbdc_1_1config.html#a156d9dde7e6e6381fa15971202b4d488", null ],

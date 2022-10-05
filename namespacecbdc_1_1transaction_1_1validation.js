@@ -29,6 +29,7 @@ var namespacecbdc_1_1transaction_1_1validation =
     [ "witness_program_type", "namespacecbdc_1_1transaction_1_1validation.html#acc831384037ec60d9f910d1557c62bf1", [
       [ "p2pk", "namespacecbdc_1_1transaction_1_1validation.html#acc831384037ec60d9f910d1557c62bf1a6c273932270d3597a90936b79babc832", null ]
     ] ],
+    [ "check_attestations", "namespacecbdc_1_1transaction_1_1validation.html#a6036a137d32c6ee72a9d6dd33588a81f", null ],
     [ "check_in_out_set", "namespacecbdc_1_1transaction_1_1validation.html#afd1058c34035553ee415c69885f12a8f", null ],
     [ "check_input_count", "namespacecbdc_1_1transaction_1_1validation.html#abeb1b2b8bc2fd32358b460bb86b53d34", null ],
     [ "check_input_set", "namespacecbdc_1_1transaction_1_1validation.html#a19a9e7e41435f482b21c5ba94c6c4eef", null ],

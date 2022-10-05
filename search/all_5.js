@@ -1,7 +1,7 @@
 var searchData=
 [
   ['failed_0',['failed',['../classcbdc_1_1coordinator_1_1distributed__tx.html#a71d5d6ecc78a28643c788acad88d506fa26934eb377001f66e37289a5c93fe284',1,'cbdc::coordinator::distributed_tx']]],
-  ['fan_1',['fan',['../classcbdc_1_1client.html#a1628f43d8c0ec97cf7837e64cf36f0f8',1,'cbdc::client::fan()'],['../classcbdc_1_1transaction_1_1wallet.html#ad2549676db34c147021cde3a13a4ddc5',1,'cbdc::transaction::wallet::fan()']]],
+  ['fan_1',['fan',['../classcbdc_1_1client.html#a013c689f714777857b583acc67a8f791',1,'cbdc::client::fan()'],['../classcbdc_1_1transaction_1_1wallet.html#ad2549676db34c147021cde3a13a4ddc5',1,'cbdc::transaction::wallet::fan()']]],
   ['fan_5fcommand_2',['fan_command',['../client-cli_8cpp.html#afcf4411eed8031177b7f28f99f81f8ac',1,'client-cli.cpp']]],
   ['fatal_3',['fatal',['../classcbdc_1_1logging_1_1log.html#a96aad468d40ed5781e76c15f9dbae264',1,'cbdc::logging::log::fatal()'],['../namespacecbdc_1_1logging.html#a71a306e5ac8234a66ce25bb5aed18254adf6402fd9ecc60f5a2159fdf45711cd4',1,'cbdc::logging::fatal()'],['../namespacecbdc_1_1raft.html#a90ce1bef3a0a2ff31a408bd8178818d8adf6402fd9ecc60f5a2159fdf45711cd4',1,'cbdc::raft::fatal()']]],
   ['findshortestseparator_4',['FindShortestSeparator',['../classcbdc_1_1raft_1_1index__comparator.html#a00fefe0bfbdf8d6896af9a02bcc50fd8',1,'cbdc::raft::index_comparator']]],

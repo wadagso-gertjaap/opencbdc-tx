@@ -4,7 +4,7 @@ var searchData=
   ['controller_2ecpp_1',['controller.cpp',['../twophase_2coordinator_2controller_8cpp.html',1,'(Global Namespace)'],['../twophase_2locking__shard_2controller_8cpp.html',1,'(Global Namespace)'],['../twophase_2sentinel__2pc_2controller_8cpp.html',1,'(Global Namespace)']]],
   ['controller_2ehpp_2',['controller.hpp',['../twophase_2coordinator_2controller_8hpp.html',1,'(Global Namespace)'],['../twophase_2locking__shard_2controller_8hpp.html',1,'(Global Namespace)'],['../twophase_2sentinel__2pc_2controller_8hpp.html',1,'(Global Namespace)']]],
   ['interface_2ecpp_3',['interface.cpp',['../twophase_2locking__shard_2interface_8cpp.html',1,'']]],
-  ['interface_2ehpp_4',['interface.hpp',['../twophase_2coordinator_2interface_8hpp.html',1,'(Global Namespace)'],['../twophase_2locking__shard_2interface_8hpp.html',1,'(Global Namespace)'],['../twophase_2sentinel__2pc_2interface_8hpp.html',1,'(Global Namespace)']]],
+  ['interface_2ehpp_4',['interface.hpp',['../twophase_2coordinator_2interface_8hpp.html',1,'(Global Namespace)'],['../twophase_2locking__shard_2interface_8hpp.html',1,'(Global Namespace)']]],
   ['server_2ecpp_5',['server.cpp',['../twophase_2coordinator_2server_8cpp.html',1,'(Global Namespace)'],['../twophase_2sentinel__2pc_2server_8cpp.html',1,'(Global Namespace)']]],
   ['state_5fmachine_2ecpp_6',['state_machine.cpp',['../twophase_2coordinator_2state__machine_8cpp.html',1,'(Global Namespace)'],['../twophase_2locking__shard_2state__machine_8cpp.html',1,'(Global Namespace)']]],
   ['state_5fmachine_2ehpp_7',['state_machine.hpp',['../twophase_2coordinator_2state__machine_8hpp.html',1,'(Global Namespace)'],['../twophase_2locking__shard_2state__machine_8hpp.html',1,'(Global Namespace)']]],
