@@ -7,6 +7,7 @@
 #define CBDC_UNIVERSE0_SRC_3PC_AGENT_RUNNERS_EVM_SERIALIZATION_H_
 
 #include "messages.hpp"
+#include "signature.hpp"
 #include "util/common/buffer.hpp"
 #include "util/common/hash.hpp"
 #include "util/common/keys.hpp"
@@ -14,6 +15,7 @@
 
 #include <evmc/evmc.hpp>
 #include <evmc/hex.hpp>
+#include <json/json.h>
 #include <memory>
 #include <secp256k1.h>
 #include <secp256k1_extrakeys.h>
@@ -45,6 +47,42 @@ namespace cbdc::threepc::agent::runner {
                    uint64_t chain_id = opencbdc_chain_id)
         -> std::optional<
             std::shared_ptr<cbdc::threepc::agent::runner::evm_tx>>;
+
+    /// Converts a given buffer to an evm_tx
+    /// \param buf buffer containing the transaction to decode
+    /// \param logger logger to output any parsing errors to
+    /// \param chain_id the expected chain ID for the transaction. If the
+    // transaction contains a different chain ID this method will return
+    // std::nullopt
+    /// \return the evm_tx that was decoded
+    auto tx_from_json(const Json::Value json,
+                      uint64_t chain_id = opencbdc_chain_id)
+        -> std::optional<
+            std::shared_ptr<cbdc::threepc::agent::runner::evm_tx>>;
+
+    auto dryrun_tx_from_json(const Json::Value json,
+                             uint64_t chain_id = opencbdc_chain_id)
+        -> std::optional<
+            std::shared_ptr<cbdc::threepc::agent::runner::evm_dryrun_tx>>;
+
+    auto address_from_json(Json::Value addr) -> std::optional<evmc::address>;
+
+    auto uint256be_from_json(Json::Value val)
+        -> std::optional<evmc::uint256be>;
+
+    auto buffer_from_json(Json::Value val) -> std::optional<cbdc::buffer>;
+
+    auto uint256be_or_default(Json::Value val, evmc::uint256be def)
+        -> evmc::uint256be;
+
+    auto tx_to_json(cbdc::threepc::agent::runner::evm_tx& tx,
+                    const std::shared_ptr<secp256k1_context>& ctx)
+        -> Json::Value;
+    auto tx_receipt_to_json(cbdc::threepc::agent::runner::evm_tx_receipt& rcpt,
+                            const std::shared_ptr<secp256k1_context>& ctx)
+        -> Json::Value;
+    auto tx_log_to_json(cbdc::threepc::agent::runner::evm_log& log)
+        -> Json::Value;
 
     /// Calculate ethereum-compatible txid
     /// \param tx transaction to calculate ID for

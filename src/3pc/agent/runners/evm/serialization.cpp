@@ -184,4 +184,219 @@ namespace cbdc::threepc::agent::runner {
         ser << rlp_tx;
         return buf;
     }
+
+    auto dryrun_tx_from_json(Json::Value params, uint64_t chain_id)
+        -> std::optional<
+            std::shared_ptr<cbdc::threepc::agent::runner::evm_dryrun_tx>> {
+        auto tx = tx_from_json(params, chain_id);
+        if(!tx) {
+            return std::nullopt;
+        }
+
+        auto drtx
+            = std::make_shared<cbdc::threepc::agent::runner::evm_dryrun_tx>();
+        drtx->m_tx = *tx.value();
+        auto maybe_from = address_from_json(params["from"]);
+        if(maybe_from) {
+            drtx->m_from = maybe_from.value();
+        }
+        return drtx;
+    }
+
+    auto address_from_json(Json::Value addr) -> std::optional<evmc::address> {
+        if(!addr.empty() && addr.isString()) {
+            auto addr_str = addr.asString();
+            if(addr_str.size() > 2) {
+                auto maybe_addr_buf
+                    = cbdc::buffer::from_hex(addr_str.substr(2));
+                if(maybe_addr_buf) {
+                    auto maybe_addr = cbdc::from_buffer<evmc::address>(
+                        maybe_addr_buf.value());
+                    if(maybe_addr) {
+                        return maybe_addr.value();
+                    }
+                }
+            }
+        }
+        return std::nullopt;
+    }
+
+    auto uint256be_from_json(Json::Value val)
+        -> std::optional<evmc::uint256be> {
+        auto maybe_val_buf = buffer_from_json(val);
+        if(maybe_val_buf) {
+            auto maybe_val
+                = cbdc::from_buffer<evmc::uint256be>(maybe_val_buf.value());
+            if(maybe_val) {
+                return maybe_val.value();
+            }
+        }
+        return std::nullopt;
+    }
+
+    auto buffer_from_json(Json::Value val) -> std::optional<cbdc::buffer> {
+        if(!val.empty() && val.isString()) {
+            auto val_str = val.asString();
+            if(val_str.size() > 2) {
+                return cbdc::buffer::from_hex(val_str.substr(2));
+            }
+        }
+        return std::nullopt;
+    }
+
+    auto uint256be_or_default(Json::Value val, evmc::uint256be def)
+        -> evmc::uint256be {
+        auto maybe_ui256 = uint256be_from_json(val);
+        if(maybe_ui256) {
+            return maybe_ui256.value();
+        } else {
+            return def;
+        }
+    }
+
+    auto tx_from_json(Json::Value params, uint64_t /*chain_id*/)
+        -> std::optional<
+            std::shared_ptr<cbdc::threepc::agent::runner::evm_tx>> {
+        auto tx = std::make_shared<cbdc::threepc::agent::runner::evm_tx>();
+        tx->m_type = evm_tx_type::legacy;
+        if(!params["type"].empty() && params["type"].isNumeric()) {
+            tx->m_type = static_cast<evm_tx_type>(params["type"].asInt());
+        }
+
+        auto maybe_to = address_from_json(params["to"]);
+        if(maybe_to) {
+            tx->m_to = maybe_to.value();
+        }
+
+        tx->m_value
+            = uint256be_or_default(params["value"], evmc::uint256be(0));
+        tx->m_nonce
+            = uint256be_or_default(params["nonce"], evmc::uint256be(0));
+        tx->m_gas_price
+            = uint256be_or_default(params["gasPrice"], evmc::uint256be(0));
+        tx->m_gas_limit
+            = uint256be_or_default(params["gas"], evmc::uint256be(0));
+        tx->m_gas_tip_cap
+            = uint256be_or_default(params["maxPriorityFeePerGas"],
+                                   evmc::uint256be(0));
+
+        tx->m_gas_fee_cap
+            = uint256be_or_default(params["maxFeePerGas"], evmc::uint256be(0));
+
+        // TODO
+        tx->m_access_list = evm_access_list{};
+
+        auto maybe_input = buffer_from_json(params["data"]);
+        if(maybe_input) {
+            tx->m_input.resize(maybe_input->size());
+            std::memcpy(tx->m_input.data(),
+                        maybe_input->data(),
+                        maybe_input->size());
+        }
+
+        tx->m_sig.m_r = uint256be_or_default(params["r"], evmc::uint256be(0));
+        tx->m_sig.m_s = uint256be_or_default(params["s"], evmc::uint256be(0));
+        tx->m_sig.m_v = uint256be_or_default(params["v"], evmc::uint256be(0));
+
+        return tx;
+    }
+
+    auto tx_to_json(cbdc::threepc::agent::runner::evm_tx& tx,
+                    const std::shared_ptr<secp256k1_context>& ctx)
+        -> Json::Value {
+        auto res = Json::Value();
+        res["type"] = static_cast<int>(tx.m_type);
+
+        if(tx.m_to.has_value()) {
+            res["to"] = "0x" + to_hex(tx.m_to.value());
+        }
+
+        res["value"] = "0x" + to_hex(tx.m_value);
+        res["nonce"] = "0x" + to_hex(tx.m_nonce);
+        res["gasPrice"] = "0x" + to_hex(tx.m_gas_price);
+        res["gas"] = "0x" + to_hex(tx.m_gas_limit);
+        res["maxPriorityFeePerGas"] = "0x" + to_hex(tx.m_gas_tip_cap);
+        res["maxFeePerGas"] = "0x" + to_hex(tx.m_gas_fee_cap);
+
+        if(tx.m_input.size() > 0) {
+            auto buf = cbdc::buffer();
+            buf.extend(tx.m_input.size());
+            std::memcpy(buf.data(), tx.m_input.data(), tx.m_input.size());
+            res["data"] = buf.to_hex_prefixed();
+        }
+
+        // TODO Access List Serialize
+        // tx.m_access_list = evm_access_list{};
+
+        res["r"] = "0x" + to_hex(tx.m_sig.m_r);
+        res["s"] = "0x" + to_hex(tx.m_sig.m_s);
+        res["v"] = "0x" + to_hex(tx.m_sig.m_v);
+
+        auto maybe_from_addr = check_signature(tx, ctx);
+        if(maybe_from_addr) {
+            res["from"] = "0x" + to_hex(maybe_from_addr.value());
+        }
+
+        return res;
+    }
+
+    auto tx_receipt_to_json(cbdc::threepc::agent::runner::evm_tx_receipt& rcpt,
+                            const std::shared_ptr<secp256k1_context>& ctx)
+        -> Json::Value {
+        auto res = Json::Value();
+
+        res["transaction"] = tx_to_json(rcpt.m_tx, ctx);
+        res["from"] = res["transaction"]["from"];
+        res["to"] = res["transaction"]["to"];
+        if(rcpt.m_create_address.has_value()) {
+            res["contractAddress"]
+                = "0x" + to_hex(rcpt.m_create_address.value());
+        }
+        res["gasUsed"] = "0x" + to_hex(rcpt.m_gas_used);
+        res["cumulativeGasUsed"] = "0x" + to_hex(rcpt.m_gas_used);
+        res["logs"] = Json::Value(Json::arrayValue);
+        for(auto& l : rcpt.m_logs) {
+            res["logs"].append(tx_log_to_json(l));
+        }
+
+        if(rcpt.m_output_data.size() > 0) {
+            auto buf = cbdc::buffer();
+            buf.extend(rcpt.m_output_data.size());
+            std::memcpy(buf.data(),
+                        rcpt.m_output_data.data(),
+                        rcpt.m_output_data.size());
+            res["output_data"] = buf.to_hex_prefixed();
+        }
+
+        res["success"] = "0x1";
+        res["blockNumber"] = "0x1";
+        res["blockHash"] = "0x000000000000000000000000000000000000000000000000"
+                           "0000000000000000";
+        res["transactionIndex"] = "0x0";
+        return res;
+    }
+
+    auto tx_log_to_json(cbdc::threepc::agent::runner::evm_log& log)
+        -> Json::Value {
+        auto res = Json::Value();
+        res["address"] = "0x" + to_hex(log.m_addr);
+        if(log.m_data.size() > 0) {
+            auto buf = cbdc::buffer();
+            buf.extend(log.m_data.size());
+            std::memcpy(buf.data(), log.m_data.data(), log.m_data.size());
+            res["data"] = buf.to_hex_prefixed();
+        }
+        res["topics"] = Json::Value(Json::arrayValue);
+        for(auto& t : log.m_topics) {
+            res["topics"].append("0x" + to_hex(t));
+        }
+        res["blockNumber"] = "0x1";
+        res["blockHash"] = "0x00000000000000000000000000000000000000000000"
+                           "00000000000000000000";
+        res["transactionHash"] = "0x00000000000000000000000000000000000000"
+                                 "00000000000000000000000000";
+        res["transactionIndex"] = "0x0";
+        res["logIndex"] = "0x0";
+        return res;
+    }
 }
