@@ -258,7 +258,9 @@ void evm_bench::deploy() {
                             m_current_nonce);
                     m_log->info(
                         "Deployed ERC20 to",
-                        cbdc::threepc::agent::runner::to_hex(m_erc20_addr));
+                        cbdc::threepc::agent::runner::to_hex(m_erc20_addr),
+                        "TXID:",
+                        maybe_txid.value());
                     auto mint_tx_hex
                         = send_erc20(m_erc20_addr,
                                      m_current_nonce + evmc::uint256be(1),

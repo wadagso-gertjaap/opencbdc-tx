@@ -11,9 +11,9 @@
 #include "3pc/agent/runners/evm/serialization.hpp"
 #include "3pc/agent/runners/evm/util.hpp"
 #include "impl.hpp"
+#include "util/common/hash.hpp"
 #include "util/serialization/format.hpp"
 
-#include <cassert>
 #include <future>
 
 using namespace cbdc::threepc::agent::runner;
@@ -75,19 +75,75 @@ namespace cbdc::threepc::agent::rpc {
             return handle_get_transaction_by_hash(params, callback);
         } else if(method == "eth_getTransactionReceipt") {
             return handle_get_transaction_receipt(params, callback);
-        } else if(method == "eth_getBlockByNumber") {
-            return handle_get_block(params, callback, false);
-        } else if(method == "eth_getBlockByHash") {
-            return handle_get_block(params, callback, true);
+        } else if(method == "eth_getBlockByNumber"
+                  || method == "eth_getBlockByHash") {
+            return handle_get_block(params, callback);
+        } else if(method == "eth_getBlockTransactionCountByHash"
+                  || method == "eth_getBlockTransactionCountByNumber") {
+            return handle_get_block_txcount(params, callback);
+        } else if(method == "eth_getTransactionByBlockHashAndIndex"
+                  || method == "eth_getTransactionByBlockNumberAndIndex") {
+            return handle_get_block_tx(params, callback);
         } else if(method == "eth_blockNumber") {
             return handle_block_number(params, callback);
+        } else if(method == "eth_mining") {
+            return handle_boolean(params, callback, false);
+        } else if(method == "eth_syncing") {
+            return handle_boolean(params, callback, false);
         } else if(method == "eth_feeHistory") {
             return handle_fee_history(params, callback);
-        } else if(method == "eth_getLogs" || method == "evm_increaseTime") {
-            return handle_not_supported(params, callback);
+        } else if(method == "eth_getLogs") {
+            // TODO
+            return handle_error(params,
+                                callback,
+                                -32605,
+                                "eth_getLogs is still under development");
+        } else if(method == "eth_signTransaction" || method == "eth_sign") {
+            return handle_error(
+                params,
+                callback,
+                -32602,
+                "Wallet support not enabled - sign transactions "
+                "locally before submitting");
+        } else if(method == "eth_uninstallFilter"
+                  || method == "eth_newPendingTransactionFilter"
+                  || method == "eth_newFilter"
+                  || method == "eth_newBlockFilter"
+                  || method == "eth_getFilterLogs"
+                  || method == "eth_getFilterChanges") {
+            return handle_error(params,
+                                callback,
+                                -32603,
+                                "OpenCBDC does not support filters");
+        } else if(method == "eth_getWork" || method == "eth_submitWork"
+                  || method == "eth_submitHashrate") {
+            return handle_error(params,
+                                callback,
+                                -32604,
+                                "OpenCBDC does not use mining");
+        } else if(method == "evm_increaseTime") {
+            return handle_error(params,
+                                callback,
+                                -32605,
+                                "OpenCBDC does not support time travel");
+        } else if(method == "eth_getUncleByBlockHashAndIndex"
+                  || method == "eth_getUncleByBlockNumberAndIndex") {
+            // There are no uncle blocks in OpenCBDC ever
+            return handle_error(params,
+                                callback,
+                                -32001,
+                                "Uncle block not found");
+        } else if(method == "eth_getUncleCountByBlockHash"
+                  || method == "eth_getUncleCountByBlockNumber"
+                  || method == "eth_hashrate") {
+            // There are no uncle blocks in OpenCBDC ever
+            return handle_number(params, callback, 0);
         }
         m_log->warn("Unknown method", method);
-        return handle_not_supported(params, callback);
+        return handle_error(params,
+                            callback,
+                            -32699,
+                            "Unknown method: " + method);
     }
 
     auto http_server::handle_send_raw_transaction(
@@ -177,6 +233,18 @@ namespace cbdc::threepc::agent::rpc {
             m_log->warn("Invalid parameters to getTransactionCount");
             return false;
         }
+
+        if(params.size() > 1 && params[1].isString()
+           && params[1].asString() != "latest") {
+            auto ret = Json::Value();
+            ret["error"] = Json::Value();
+            ret["error"]["code"] = -32101;
+            ret["error"]["message"]
+                = "OpenCBDC only supports 'latest' as defaultBlock parameter";
+            callback(ret);
+            return true;
+        }
+
         auto params_str = params[0].asString();
         auto maybe_runner_params
             = cbdc::buffer::from_hex(params_str.substr(2));
@@ -191,19 +259,31 @@ namespace cbdc::threepc::agent::rpc {
             runner_params,
             true,
             [callback, runner_params](interface::exec_return_type res) {
+                auto ret = Json::Value();
+
                 auto& updates = std::get<return_type>(res);
                 auto it = updates.find(runner_params);
-                assert(it != updates.end());
+
+                if(it == updates.end()) {
+                    // For accounts that don't exist yet, return 1
+                    ret["result"] = to_hex_trimmed(evmc::uint256be(1));
+                    callback(ret);
+                }
 
                 auto maybe_acc
                     = cbdc::from_buffer<runner::evm_account>(it->second);
-                assert(maybe_acc.has_value());
+                if(!maybe_acc.has_value()) {
+                    ret["error"] = Json::Value();
+                    ret["error"]["code"] = -32002;
+                    ret["error"]["message"] = "Internal error";
+                    callback(ret);
+                    return;
+                }
 
                 auto& acc = maybe_acc.value();
 
                 auto tx_count = acc.m_nonce + evmc::uint256be(1);
-                auto ret = Json::Value();
-                ret["result"] = to_hex(tx_count);
+                ret["result"] = to_hex_trimmed(tx_count);
                 callback(ret);
             });
     }
@@ -215,6 +295,18 @@ namespace cbdc::threepc::agent::rpc {
             m_log->warn("Invalid parameters to getBalance");
             return false;
         }
+
+        if(params.size() > 1 && params[1].isString()
+           && params[1].asString() != "latest") {
+            auto ret = Json::Value();
+            ret["error"] = Json::Value();
+            ret["error"]["code"] = -32101;
+            ret["error"]["message"]
+                = "OpenCBDC only supports 'latest' as defaultBlock parameter";
+            callback(ret);
+            return true;
+        }
+
         auto params_str = params[0].asString();
         auto maybe_runner_params
             = cbdc::buffer::from_hex(params_str.substr(2));
@@ -229,17 +321,28 @@ namespace cbdc::threepc::agent::rpc {
             runner_params,
             true,
             [callback, runner_params](interface::exec_return_type res) {
+                auto ret = Json::Value();
                 auto& updates = std::get<return_type>(res);
                 auto it = updates.find(runner_params);
-                assert(it != updates.end());
+                if(it == updates.end() || it->second.size() == 0) {
+                    // Return 0 for non-existent accounts
+                    ret["result"] = "0x0";
+                    callback(ret);
+                    return;
+                }
 
                 auto maybe_acc
                     = cbdc::from_buffer<runner::evm_account>(it->second);
-                assert(maybe_acc.has_value());
+                if(!maybe_acc.has_value()) {
+                    ret["error"] = Json::Value();
+                    ret["error"]["code"] = -32002;
+                    ret["error"]["message"] = "Internal error";
+                    callback(ret);
+                    return;
+                }
 
                 auto& acc = maybe_acc.value();
-                auto ret = Json::Value();
-                ret["result"] = to_hex(acc.m_balance);
+                ret["result"] = to_hex_trimmed(acc.m_balance);
                 callback(ret);
             });
     }
@@ -261,20 +364,41 @@ namespace cbdc::threepc::agent::rpc {
         auto runner_params = std::move(maybe_runner_params.value());
         return exec_tx(
             callback,
-            runner::evm_runner_function::get_transaction,
+            runner::evm_runner_function::get_transaction_receipt,
             runner_params,
             true,
             [callback, runner_params, this](interface::exec_return_type res) {
+                auto ret = Json::Value();
                 auto& updates = std::get<return_type>(res);
                 auto it = updates.find(runner_params);
-                assert(it != updates.end());
+                if(it == updates.end() || it->second.size() == 0) {
+                    ret["error"] = Json::Value();
+                    ret["error"]["code"] = -32001;
+                    ret["error"]["message"] = "Transaction not found";
+                    callback(ret);
+                    return;
+                }
 
-                auto maybe_tx = cbdc::from_buffer<runner::evm_tx>(it->second);
-                assert(maybe_tx.has_value());
+                auto maybe_tx
+                    = cbdc::from_buffer<runner::evm_tx_receipt>(it->second);
+                if(!maybe_tx.has_value()) {
+                    ret["error"] = Json::Value();
+                    ret["error"]["code"] = -32002;
+                    ret["error"]["message"] = "Internal error";
+                    callback(ret);
+                    return;
+                }
 
-                auto& tx = maybe_tx.value();
-                auto ret = Json::Value();
-                ret["result"] = tx_to_json(tx, m_secp);
+                auto& tx_rcpt = maybe_tx.value();
+                auto json_tx = tx_to_json(tx_rcpt.m_tx, m_secp);
+
+                // Append block data
+                auto block_num = evmc::uint256be(tx_rcpt.m_ticket_number);
+                json_tx["blockHash"] = "0x" + to_hex(block_num);
+                json_tx["blockNumber"] = to_hex_trimmed(block_num);
+                json_tx["transactionIndex"] = "0x0";
+
+                ret["result"] = json_tx;
                 callback(ret);
             });
     }
@@ -300,16 +424,28 @@ namespace cbdc::threepc::agent::rpc {
             runner_params,
             true,
             [callback, runner_params, this](interface::exec_return_type res) {
+                auto ret = Json::Value();
                 auto& updates = std::get<return_type>(res);
                 auto it = updates.find(runner_params);
-                assert(it != updates.end());
+                if(it == updates.end() || it->second.size() == 0) {
+                    ret["error"] = Json::Value();
+                    ret["error"]["code"] = -32001;
+                    ret["error"]["message"] = "Transaction not found";
+                    callback(ret);
+                    return;
+                }
 
                 auto maybe_rcpt
                     = cbdc::from_buffer<runner::evm_tx_receipt>(it->second);
-                assert(maybe_rcpt.has_value());
+                if(!maybe_rcpt.has_value()) {
+                    ret["error"] = Json::Value();
+                    ret["error"]["code"] = -32002;
+                    ret["error"]["message"] = "Internal error";
+                    callback(ret);
+                    return;
+                }
 
                 auto& rcpt = maybe_rcpt.value();
-                auto ret = Json::Value();
                 ret["result"] = tx_receipt_to_json(rcpt, m_secp);
                 callback(ret);
             });
@@ -322,6 +458,18 @@ namespace cbdc::threepc::agent::rpc {
             m_log->warn("Invalid parameters to getBalance");
             return false;
         }
+
+        if(params.size() > 1 && params[1].isString()
+           && params[1].asString() != "latest") {
+            auto ret = Json::Value();
+            ret["error"] = Json::Value();
+            ret["error"]["code"] = -32101;
+            ret["error"]["message"]
+                = "OpenCBDC only supports 'latest' as defaultBlock parameter";
+            callback(ret);
+            return true;
+        }
+
         auto params_str = params[0].asString();
         auto maybe_runner_params
             = cbdc::buffer::from_hex(params_str.substr(2));
@@ -336,11 +484,16 @@ namespace cbdc::threepc::agent::rpc {
             runner_params,
             true,
             [callback, runner_params](interface::exec_return_type res) {
+                auto ret = Json::Value();
                 auto& updates = std::get<return_type>(res);
                 auto it = updates.find(runner_params);
-                assert(it != updates.end());
-                auto ret = Json::Value();
-                ret["result"] = it->second.to_hex();
+                if(it == updates.end() || it->second.size() == 0) {
+                    // Return empty buffer when code not found
+                    ret["result"] = "0x";
+                    callback(ret);
+                    return;
+                }
+                ret["result"] = "0x" + it->second.to_hex();
                 callback(ret);
             });
     }
@@ -349,7 +502,7 @@ namespace cbdc::threepc::agent::rpc {
         Json::Value /*params*/,
         const server_type::result_callback_type& callback) -> bool {
         auto ret = Json::Value();
-        ret["result"] = to_hex(evmc::uint256be(opencbdc_chain_id));
+        ret["result"] = to_hex_trimmed(evmc::uint256be(opencbdc_chain_id));
         callback(ret);
         return true;
     }
@@ -357,45 +510,245 @@ namespace cbdc::threepc::agent::rpc {
     auto http_server::handle_block_number(
         Json::Value /*params*/,
         const server_type::result_callback_type& callback) -> bool {
+        auto highest_ticket_number = m_broker->highest_ticket();
         auto ret = Json::Value();
-        long epoch_sec
-            = std::chrono::duration_cast<std::chrono::seconds>(
-                  std::chrono::system_clock::now().time_since_epoch())
-                  .count();
-        ret["result"] = to_hex(evmc::uint256be(epoch_sec));
+        ret["result"] = to_hex_trimmed(evmc::uint256be(highest_ticket_number));
         callback(ret);
         return true;
     }
 
-    auto http_server::handle_get_block(
+    auto http_server::fetch_block(
         Json::Value params,
         const server_type::result_callback_type& callback,
-        bool by_hash) -> bool {
-        auto ret = Json::Value();
-
-        if(by_hash) {
-            ret["number"] = 1;
-            ret["hash"] = params[0];
-        } else {
-            ret["number"] = params[0];
-            ret["hash"]
-                = "0x00000000000000000000000000000000000000000000000000000"
-                  "00000000000";
+        std::function<void(interface::exec_return_type, cbdc::buffer)> res_cb)
+        -> bool {
+        if(!params.isArray() || params.empty() || !params[0].isString()
+           || (params.size() > 1 && !params[1].isBool())) {
+            m_log->warn("Invalid parameters to getBlock", params.size());
+            return false;
         }
-        ret["parentHash"] = "0x00000000000000000000000000000000000000000000000"
-                            "00000000000000000";
-        ret["timestamp"] = ret["number"];
-        ret["gasLimit"] = "0xffffffff";
-        ret["gasUsed"] = "0x0";
-        ret["baseFeePerGas"] = "0x0";
-        ret["miner"] = "0x0000000000000000000000000000000000000000";
-        ret["transactions"] = Json::Value(Json::arrayValue);
-        ret["nonce"] = "0x00000000";
-        auto buf = cbdc::buffer();
-        buf.extend(256);
-        ret["logsBloom"] = buf.to_hex_prefixed();
+
+        cbdc::buffer runner_params;
+        auto maybe_block_num = uint256be_from_hex(params[0].asString());
+        if(!maybe_block_num) {
+            m_log->warn("Invalid blockNumber / hash parameter");
+            return false;
+        }
+        runner_params = cbdc::make_buffer(maybe_block_num.value());
+
+        return exec_tx(
+            callback,
+            runner::evm_runner_function::get_block,
+            runner_params,
+            true,
+            [res_cb, runner_params](interface::exec_return_type res) {
+                res_cb(res, runner_params);
+            });
+    }
+
+    auto http_server::handle_get_block(
+        Json::Value params,
+        const server_type::result_callback_type& callback) -> bool {
+        auto include_tx_details = params[1].asBool();
+        return fetch_block(
+            params,
+            callback,
+            [this, callback, include_tx_details](
+                interface::exec_return_type res,
+                cbdc::buffer runner_params) {
+                auto& updates = std::get<return_type>(res);
+                auto it = updates.find(runner_params);
+                auto ret = Json::Value();
+                if(it == updates.end() || it->second.size() == 0) {
+                    ret["error"] = Json::Value();
+                    ret["error"]["code"] = -32001;
+                    ret["error"]["message"] = "Data was not found";
+                    callback(ret);
+                    return;
+                }
+
+                auto maybe_pretend_block
+                    = cbdc::from_buffer<evm_pretend_block>(it->second);
+                if(!maybe_pretend_block) {
+                    ret["error"] = Json::Value();
+                    ret["error"]["code"] = -32002;
+                    ret["error"]["message"] = "Internal error";
+                    callback(ret);
+                    return;
+                }
+                ret["result"] = Json::Value();
+                auto blk = maybe_pretend_block.value();
+                ret["result"]["number"]
+                    = to_hex_trimmed(evmc::uint256be(blk.m_block_number));
+                ret["result"]["hash"]
+                    = "0x" + cbdc::to_string(blk.m_block_hash);
+                ret["result"]["parentHash"]
+                    = "0x" + to_hex(evmc::uint256be(blk.m_block_number - 1));
+                ret["result"]["gasLimit"] = "0xffffffff";
+                ret["result"]["gasUsed"] = "0x0";
+                ret["result"]["baseFeePerGas"] = "0x0";
+                ret["result"]["miner"]
+                    = "0x0000000000000000000000000000000000000000";
+                ret["result"]["transactions"] = Json::Value(Json::arrayValue);
+                ret["result"]["nonce"] = "0x00000000";
+
+                for(auto& tx_rcpt : blk.m_transactions) {
+                    if(include_tx_details) {
+                        auto json_tx = tx_to_json(tx_rcpt.m_tx, m_secp);
+                        auto block_num
+                            = evmc::uint256be(tx_rcpt.m_ticket_number);
+                        json_tx["blockHash"] = "0x" + to_hex(block_num);
+                        json_tx["blockNumber"] = to_hex_trimmed(block_num);
+                        json_tx["transactionIndex"] = "0x0";
+                        ret["result"]["transactions"].append(json_tx);
+                    } else {
+                        ret["result"]["transactions"].append(
+                            "0x" + to_string(tx_id(tx_rcpt.m_tx)));
+                    }
+                }
+
+                // We don't have any uncles ever
+                ret["result"]["uncles"] = Json::Value(Json::arrayValue);
+                callback(ret);
+            });
+    }
+
+    auto http_server::handle_get_block_txcount(
+        Json::Value params,
+        const server_type::result_callback_type& callback) -> bool {
+        return fetch_block(
+            params,
+            callback,
+            [this, callback](interface::exec_return_type res,
+                             cbdc::buffer runner_params) {
+                auto& updates = std::get<return_type>(res);
+                auto it = updates.find(runner_params);
+                auto ret = Json::Value();
+                if(it == updates.end() || it->second.size() == 0) {
+                    ret["error"] = Json::Value();
+                    ret["error"]["code"] = -32001;
+                    ret["error"]["message"] = "Data was not found";
+                    callback(ret);
+                    return;
+                }
+
+                auto maybe_pretend_block
+                    = cbdc::from_buffer<evm_pretend_block>(it->second);
+                if(!maybe_pretend_block) {
+                    ret["error"] = Json::Value();
+                    ret["error"]["code"] = -32002;
+                    ret["error"]["message"] = "Internal error";
+                    callback(ret);
+                    return;
+                }
+                auto blk = maybe_pretend_block.value();
+                ret["result"] = to_hex_trimmed(
+                    evmc::uint256be(blk.m_transactions.size()));
+                callback(ret);
+            });
+    }
+
+    auto http_server::handle_error(
+        Json::Value /*params*/,
+        const server_type::result_callback_type& callback,
+        int code,
+        std::string message) -> bool {
+        auto ret = Json::Value();
+        ret["error"] = Json::Value();
+        ret["error"]["code"] = code;
+        ret["error"]["message"] = message;
         callback(ret);
         return true;
+    }
+
+    auto http_server::handle_number(
+        Json::Value /*params*/,
+        const server_type::result_callback_type& callback,
+        uint64_t number) -> bool {
+        auto ret = Json::Value();
+        ret["result"] = to_hex_trimmed(evmc::uint256be(number));
+        callback(ret);
+        return true;
+    }
+
+    auto http_server::handle_boolean(
+        Json::Value /*params*/,
+        const server_type::result_callback_type& callback,
+        bool result) -> bool {
+        auto ret = Json::Value();
+        ret["result"] = result;
+        callback(ret);
+        return true;
+    }
+
+    auto http_server::handle_get_block_tx(
+        Json::Value params,
+        const server_type::result_callback_type& callback) -> bool {
+        if(!params.isArray() || params.size() < 2 || !params[0].isString()
+           || !params[1].isString()) {
+            m_log->warn("Invalid parameters to "
+                        "getTransacionByBlock{Hash/Number}AndIndex");
+            return false;
+        }
+
+        auto shadow_params = Json::Value(Json::arrayValue);
+        shadow_params.append(params[0]);
+
+        return fetch_block(
+            shadow_params,
+            callback,
+            [this, callback, params](interface::exec_return_type res,
+                                     cbdc::buffer runner_params) {
+                auto& updates = std::get<return_type>(res);
+                auto it = updates.find(runner_params);
+                auto ret = Json::Value();
+                if(it == updates.end() || it->second.size() == 0) {
+                    ret["error"] = Json::Value();
+                    ret["error"]["code"] = -32001;
+                    ret["error"]["message"] = "Data was not found";
+                    callback(ret);
+                    return;
+                }
+
+                auto maybe_pretend_block
+                    = cbdc::from_buffer<evm_pretend_block>(it->second);
+                if(!maybe_pretend_block) {
+                    ret["error"] = Json::Value();
+                    ret["error"]["code"] = -32002;
+                    ret["error"]["message"] = "Internal error";
+                    callback(ret);
+                    return;
+                }
+
+                auto maybe_idx256 = uint256be_from_hex(params[1].asString());
+                if(!maybe_idx256) {
+                    ret["error"] = Json::Value();
+                    ret["error"]["code"] = -32003;
+                    ret["error"]["message"]
+                        = "Transaction index was invalid - expect hex format";
+                    callback(ret);
+                    return;
+                }
+                auto idx = to_uint64(maybe_idx256.value());
+                auto blk = maybe_pretend_block.value();
+                if(blk.m_transactions.size() < idx) {
+                    ret["error"] = Json::Value();
+                    ret["error"]["code"] = -32001;
+                    ret["error"]["message"] = "Data was not found";
+                    callback(ret);
+                    return;
+                }
+
+                auto json_tx
+                    = tx_to_json(blk.m_transactions[idx].m_tx, m_secp);
+                auto block_num
+                    = evmc::uint256be(blk.m_transactions[idx].m_ticket_number);
+                json_tx["blockHash"] = "0x" + to_hex(block_num);
+                json_tx["blockNumber"] = to_hex_trimmed(block_num);
+                json_tx["transactionIndex"] = "0x0";
+                ret["result"] = json_tx;
+                callback(ret);
+            });
     }
 
     auto http_server::handle_accounts(
@@ -407,21 +760,21 @@ namespace cbdc::threepc::agent::rpc {
         return true;
     }
 
-    auto http_server::handle_not_supported(
-        Json::Value /*params*/,
-        const server_type::result_callback_type& callback) -> bool {
-        auto ret = Json::Value();
-        ret["error"] = Json::Value();
-        ret["error"]["code"] = -32601;
-        ret["error"]["message"] = "Method not supported";
-        callback(ret);
-        return true;
-    }
-
     auto http_server::handle_estimate_gas(
-        Json::Value /*params*/,
+        Json::Value params,
         const server_type::result_callback_type& callback) -> bool {
         auto ret = Json::Value();
+
+        if(params.size() > 1 && params[1].isString()
+           && params[1].asString() != "latest") {
+            ret["error"] = Json::Value();
+            ret["error"]["code"] = -32101;
+            ret["error"]["message"]
+                = "OpenCBDC only supports 'latest' as defaultBlock parameter";
+            callback(ret);
+            return true;
+        }
+
         // TODO: actually estimate gas
         ret["result"] = "0xffffffffff";
         callback(ret);
@@ -455,6 +808,17 @@ namespace cbdc::threepc::agent::rpc {
             return false;
         }
 
+        if(params.size() > 1 && params[1].isString()
+           && params[1].asString() != "latest") {
+            auto ret = Json::Value();
+            ret["error"] = Json::Value();
+            ret["error"]["code"] = -32101;
+            ret["error"]["message"]
+                = "OpenCBDC only supports 'latest' as defaultBlock parameter";
+            callback(ret);
+            return true;
+        }
+
         auto maybe_tx = dryrun_tx_from_json(params[0]);
         if(!maybe_tx) {
             m_log->warn("Parameter is not a valid transaction");
@@ -475,7 +839,9 @@ namespace cbdc::threepc::agent::rpc {
                            auto& updates = std::get<return_type>(res);
                            auto it = updates.find(txid);
                            if(it == updates.end()) {
-                               ret["error"] = -32001;
+                               ret["error"] = Json::Value();
+                               ret["error"]["code"] = -32001;
+                               ret["error"]["message"] = "Data was not found";
                                callback(ret);
                                return;
                            }
@@ -483,7 +849,9 @@ namespace cbdc::threepc::agent::rpc {
                            auto maybe_receipt
                                = cbdc::from_buffer<evm_tx_receipt>(it->second);
                            if(!maybe_receipt) {
-                               ret["error"] = -32002;
+                               ret["error"] = Json::Value();
+                               ret["error"]["code"] = -32002;
+                               ret["error"]["message"] = "Internal error";
                                callback(ret);
                                return;
                            }
@@ -521,7 +889,7 @@ namespace cbdc::threepc::agent::rpc {
                        [callback, tx](interface::exec_return_type) {
                            auto txid = cbdc::make_buffer(tx_id(*tx));
                            auto ret = Json::Value();
-                           ret["result"] = txid.to_hex();
+                           ret["result"] = "0x" + txid.to_hex();
                            callback(ret);
                        });
     }
@@ -538,7 +906,9 @@ namespace cbdc::threepc::agent::rpc {
             if(!std::holds_alternative<return_type>(res)) {
                 auto ec = std::get<interface::error_code>(res);
                 auto ret = Json::Value();
-                ret["error"] = static_cast<int>(ec);
+                ret["error"] = Json::Value();
+                ret["error"]["code"] = -33000 - static_cast<int>(ec);
+                ret["error"]["message"] = "Execution error";
                 callback(ret);
                 return;
             }

@@ -83,6 +83,8 @@ namespace cbdc::threepc::agent::runner {
         -> Json::Value;
     auto tx_log_to_json(cbdc::threepc::agent::runner::evm_log& log)
         -> Json::Value;
+    auto access_list_to_json(cbdc::threepc::agent::runner::evm_access_list& al)
+        -> Json::Value;
 
     /// Calculate ethereum-compatible txid
     /// \param tx transaction to calculate ID for

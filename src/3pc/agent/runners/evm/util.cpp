@@ -32,6 +32,23 @@ namespace cbdc::threepc::agent::runner {
         return evmc::hex(evmc::bytes(b.bytes, sizeof(b.bytes)));
     }
 
+    auto to_hex_trimmed(const evmc::bytes32& b, const std::string& prefix) -> std::string {
+        size_t offset = 0;
+        while(b.bytes[offset] == 0x00) {
+            offset++;
+        }
+        if(offset >= sizeof(b.bytes)) {
+            return prefix + "0";
+        } else {
+            auto str = evmc::hex(
+                evmc::bytes(&b.bytes[offset], sizeof(b.bytes) - offset));
+            if(str.substr(0, 1) == "0") {
+                str = str.substr(1);
+            }
+            return prefix + str;
+        }
+    }
+
     auto parse_bytes32(const std::string& bytes)
         -> std::optional<evmc::bytes32> {
         static constexpr size_t bytes_size = 32;

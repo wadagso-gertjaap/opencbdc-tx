@@ -121,6 +121,13 @@ namespace cbdc::threepc::agent::runner {
         /// \return transaction receipt.
         auto get_tx_receipt() const -> evm_tx_receipt;
 
+        /// Return the key for the host's ticket number, which is the hash
+        /// of the ticket number's serialized representation to uniformly
+        /// distribute all ticket-to-tx mappings across the shards
+        /// @return ticket number key
+        auto ticket_number_key(std::optional<interface::ticket_number_type> tn
+                               = std::nullopt) const -> cbdc::buffer;
+
       private:
         std::shared_ptr<logging::log> m_log;
         runner::interface::try_lock_callback_type m_try_lock_callback;

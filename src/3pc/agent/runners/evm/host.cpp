@@ -33,6 +33,7 @@ namespace cbdc::threepc::agent::runner {
           m_dry_run(dry_run),
           m_ticket_number(ticket_number) {
         m_receipt.m_tx = m_tx;
+        m_receipt.m_ticket_number = m_ticket_number;
     }
 
     auto evm_host::get_account(const evmc::address& addr, bool write) const
@@ -386,6 +387,20 @@ namespace cbdc::threepc::agent::runner {
         m_accessed_storage_keys.insert(elem);
         return EVMC_ACCESS_COLD;
     }
+    
+    auto evm_host::ticket_number_key(std::optional<interface::ticket_number_type> tn) const -> cbdc::buffer {
+        if(!tn) {
+            tn = m_ticket_number;
+        }
+        auto tn_buf = cbdc::make_buffer(tn.value());
+        CSHA256 sha;
+        hash_t tn_hash;
+
+        sha.Write(tn_buf.c_ptr(), tn_buf.size());
+        sha.Finalize(tn_hash.data());
+
+        return make_buffer(tn_hash);
+    }
 
     auto evm_host::get_state_updates() const
         -> runtime_locking_shard::state_update_type {
@@ -429,6 +444,8 @@ namespace cbdc::threepc::agent::runner {
         auto tid = make_buffer(tx_id(*tx));
         auto r = make_buffer(m_receipt);
         ret[tid] = r;
+        ret[ticket_number_key()] = tid;
+
         return ret;
     }
 

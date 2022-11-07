@@ -6,6 +6,7 @@
 #ifndef CBDC_UNIVERSE0_SRC_3PC_AGENT_RUNNERS_EVM_MESSAGES_H_
 #define CBDC_UNIVERSE0_SRC_3PC_AGENT_RUNNERS_EVM_MESSAGES_H_
 
+#include "3pc/agent/runners/interface.hpp"
 #include "util/common/hash.hpp"
 
 #include <evmc/evmc.hpp>
@@ -117,6 +118,16 @@ namespace cbdc::threepc::agent::runner {
         std::vector<evm_log> m_logs{};
         /// EVM output data.
         std::vector<uint8_t> m_output_data{};
+        /// Ticket number that ran this TX - needed to map
+        /// to pretend blocks
+        cbdc::threepc::agent::runner::interface::ticket_number_type
+            m_ticket_number;
+    };
+
+    struct evm_pretend_block {
+        cbdc::hash_t m_block_hash;
+        interface::ticket_number_type m_block_number;
+        std::vector<evm_tx_receipt> m_transactions{};
     };
 
     // Type for account code keys.

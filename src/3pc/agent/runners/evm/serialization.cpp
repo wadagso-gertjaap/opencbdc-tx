@@ -305,32 +305,42 @@ namespace cbdc::threepc::agent::runner {
                     const std::shared_ptr<secp256k1_context>& ctx)
         -> Json::Value {
         auto res = Json::Value();
-        res["type"] = static_cast<int>(tx.m_type);
+        res["type"]
+            = to_hex_trimmed(evmc::uint256be(static_cast<int>(tx.m_type)));
 
         if(tx.m_to.has_value()) {
             res["to"] = "0x" + to_hex(tx.m_to.value());
         }
 
-        res["value"] = "0x" + to_hex(tx.m_value);
-        res["nonce"] = "0x" + to_hex(tx.m_nonce);
-        res["gasPrice"] = "0x" + to_hex(tx.m_gas_price);
-        res["gas"] = "0x" + to_hex(tx.m_gas_limit);
-        res["maxPriorityFeePerGas"] = "0x" + to_hex(tx.m_gas_tip_cap);
-        res["maxFeePerGas"] = "0x" + to_hex(tx.m_gas_fee_cap);
+        res["value"] = to_hex_trimmed(tx.m_value);
+        res["nonce"] = to_hex_trimmed(tx.m_nonce);
+        res["gasPrice"] = to_hex_trimmed(tx.m_gas_price);
+        res["gas"] = to_hex_trimmed(tx.m_gas_limit);
+        
+        if(tx.m_type == evm_tx_type::dynamic_fee) {
+            res["maxPriorityFeePerGas"] = to_hex_trimmed(tx.m_gas_tip_cap);
+            res["maxFeePerGas"] = to_hex_trimmed(tx.m_gas_fee_cap);
+        }
 
         if(tx.m_input.size() > 0) {
             auto buf = cbdc::buffer();
             buf.extend(tx.m_input.size());
             std::memcpy(buf.data(), tx.m_input.data(), tx.m_input.size());
-            res["data"] = buf.to_hex_prefixed();
+            res["input"] = buf.to_hex_prefixed();
+        } else {
+            res["input"] = "0x";
         }
 
-        // TODO Access List Serialize
-        // tx.m_access_list = evm_access_list{};
+        if(tx.m_type != evm_tx_type::legacy) {
+            res["accessList"] = access_list_to_json(tx.m_access_list);
+        }
 
-        res["r"] = "0x" + to_hex(tx.m_sig.m_r);
-        res["s"] = "0x" + to_hex(tx.m_sig.m_s);
-        res["v"] = "0x" + to_hex(tx.m_sig.m_v);
+        res["hash"] = "0x" + cbdc::to_string(tx_id(tx));
+        res["r"] = to_hex_trimmed(tx.m_sig.m_r);
+        res["s"] = to_hex_trimmed(tx.m_sig.m_s);
+        res["v"] = to_hex_trimmed(tx.m_sig.m_v);
+
+        res["chainId"] = to_hex_trimmed(evmc::uint256be(opencbdc_chain_id));
 
         auto maybe_from_addr = check_signature(tx, ctx);
         if(maybe_from_addr) {
@@ -352,8 +362,8 @@ namespace cbdc::threepc::agent::runner {
             res["contractAddress"]
                 = "0x" + to_hex(rcpt.m_create_address.value());
         }
-        res["gasUsed"] = "0x" + to_hex(rcpt.m_gas_used);
-        res["cumulativeGasUsed"] = "0x" + to_hex(rcpt.m_gas_used);
+        res["gasUsed"] = to_hex_trimmed(rcpt.m_gas_used);
+        res["cumulativeGasUsed"] = to_hex_trimmed(rcpt.m_gas_used);
         res["logs"] = Json::Value(Json::arrayValue);
         for(auto& l : rcpt.m_logs) {
             res["logs"].append(tx_log_to_json(l));
@@ -397,6 +407,21 @@ namespace cbdc::threepc::agent::runner {
                                  "00000000000000000000000000";
         res["transactionIndex"] = "0x0";
         res["logIndex"] = "0x0";
+        return res;
+    }
+
+    auto access_list_to_json(cbdc::threepc::agent::runner::evm_access_list& al)
+        -> Json::Value {
+        auto res = Json::Value(Json::arrayValue);
+        for(auto& tuple : al) {
+            auto json_tuple = Json::Value();
+            json_tuple["address"] = to_hex(tuple.m_address);
+            json_tuple["storageKeys"] = Json::Value(Json::arrayValue);
+            for(auto& k : tuple.m_storage_keys) {
+                json_tuple["storageKeys"].append(to_hex(k));
+            }
+            res.append(json_tuple);
+        }
         return res;
     }
 }

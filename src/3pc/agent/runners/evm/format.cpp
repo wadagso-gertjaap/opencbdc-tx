@@ -101,13 +101,13 @@ namespace cbdc {
                     const threepc::agent::runner::evm_tx_receipt& r)
         -> serializer& {
         return ser << r.m_tx << r.m_create_address << r.m_gas_used << r.m_logs
-                   << r.m_output_data;
+                   << r.m_output_data << r.m_ticket_number;
     }
 
     auto operator>>(serializer& deser,
                     threepc::agent::runner::evm_tx_receipt& r) -> serializer& {
         return deser >> r.m_tx >> r.m_create_address >> r.m_gas_used
-            >> r.m_logs >> r.m_output_data;
+            >> r.m_logs >> r.m_output_data >> r.m_ticket_number;
     }
 
     auto operator<<(serializer& ser, const threepc::agent::runner::code_key& k)
@@ -129,5 +129,16 @@ namespace cbdc {
     auto operator>>(serializer& deser, threepc::agent::runner::storage_key& k)
         -> serializer& {
         return deser >> k.m_addr >> k.m_key;
+    }
+
+    auto operator>>(serializer& deser,
+                    threepc::agent::runner::evm_pretend_block& b)
+        -> serializer& {
+        return deser >> b.m_block_hash >> b.m_block_number >> b.m_transactions;
+    }
+    auto operator<<(serializer& ser,
+                    const threepc::agent::runner::evm_pretend_block& b)
+        -> serializer& {
+        return ser << b.m_block_hash << b.m_block_number << b.m_transactions;
     }
 }
