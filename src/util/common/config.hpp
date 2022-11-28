@@ -73,6 +73,7 @@ namespace cbdc::config {
     static constexpr auto stxo_cache_key = "stxo_cache_depth";
     static constexpr auto shard_count_key = "shard_count";
     static constexpr auto shard_prefix = "shard";
+    static constexpr auto loadgen_prefix = "loadgen";
     static constexpr auto seed_privkey = "seed_privkey";
     static constexpr auto seed_value = "seed_value";
     static constexpr auto seed_from = "seed_from";
@@ -249,6 +250,9 @@ namespace cbdc::config {
 
         /// Number of load generators over which to split pre-seeded UTXOs.
         size_t m_loadgen_count{0};
+
+        /// List of loadgen log levels by loadgen ID.
+        std::vector<logging::log_level> m_loadgen_loglevels;
 
         /// Private keys for sentinels.
         std::unordered_map<size_t, privkey_t> m_sentinel_private_keys;

@@ -34,8 +34,8 @@ auto main(int argc, char** argv) -> int {
     auto cfg = std::get<cbdc::config::options>(cfg_or_err);
 
     auto gen_id = std::stoull(args[2]);
-    auto logger
-        = std::make_shared<cbdc::logging::log>(cbdc::logging::log_level::info);
+    auto logger = std::make_shared<cbdc::logging::log>(
+        cfg.m_loadgen_loglevels[gen_id]);
 
     auto sha2_impl = SHA256AutoDetect();
     logger->info("using sha2: ", sha2_impl);

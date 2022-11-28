@@ -29,6 +29,10 @@ namespace cbdc::config {
         return {host, static_cast<unsigned short>(port)};
     }
 
+    void get_loadgen_key_prefix(std::stringstream& ss, size_t loadgen_id) {
+        ss << loadgen_prefix << loadgen_id << config_separator;
+    }
+
     void get_shard_key_prefix(std::stringstream& ss, size_t shard_id) {
         ss << shard_prefix << shard_id << config_separator;
     }
@@ -238,6 +242,13 @@ namespace cbdc::config {
         auto ss = std::stringstream();
         get_sentinel_key_prefix(ss, sentinel_id);
         ss << public_key_postfix;
+        return ss.str();
+    }
+
+    auto get_loadgen_loglevel_key(size_t loadgen_id) -> std::string {
+        std::stringstream ss;
+        get_loadgen_key_prefix(ss, loadgen_id);
+        ss << loglevel_postfix;
         return ss.str();
     }
 
@@ -614,6 +625,14 @@ namespace cbdc::config {
 
         opts.m_loadgen_count
             = cfg.get_ulong(loadgen_count_key).value_or(opts.m_loadgen_count);
+
+        for(size_t i = 0; i < opts.m_loadgen_count; i++) {
+            const auto loadgen_loglevel_key = get_loadgen_loglevel_key(i);
+            const auto loadgen_loglevel
+                = cfg.get_loglevel(loadgen_loglevel_key)
+                      .value_or(defaults::log_level);
+            opts.m_loadgen_loglevels.push_back(loadgen_loglevel);
+        }
     }
 
     auto read_options(const std::string& config_file)

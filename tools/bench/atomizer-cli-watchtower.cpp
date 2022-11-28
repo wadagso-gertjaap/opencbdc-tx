@@ -59,11 +59,8 @@ auto main(int argc, char** argv) -> int {
 
     const auto sign_txs = static_cast<bool>(std::stoull(args[3]));
 
-    auto loglevel = cbdc::logging::log_level::trace;
-    if(args.size() == 4) {
-        loglevel = cbdc::logging::log_level::info;
-    }
-    auto log = std::make_shared<cbdc::logging::log>(loglevel);
+    auto log = std::make_shared<cbdc::logging::log>(
+        cfg.m_loadgen_loglevels[cli_id]);
 
     std::string sha2_impl(SHA256AutoDetect());
     log->debug("using sha2:", sha2_impl);
